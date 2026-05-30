@@ -1,8 +1,20 @@
 # Drive Organizer
 
-**Riorganizza Google Drive con AI locale + cloud — privacy-first, zero upload di contenuti.**
+<p align="center">
+  <img src="assets/banner.svg" alt="Drive Organizer" width="100%"/>
+</p>
 
-Uno strumento CLI Python che analizza i tuoi 16.000+ file, propone una struttura ordinata e la applica in un click. L'AI scala da Ollama locale (gratuita, offline) fino a Haiku/Opus o Gemini solo sui casi difficili — il contenuto dei file non raggiunge mai il cloud.
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.11+-4285f4?style=flat-square&logo=python&logoColor=white" alt="Python 3.11+"/>
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-34a853?style=flat-square" alt="Platform"/>
+  <img src="https://img.shields.io/badge/AI-Ollama%20%7C%20Claude%20%7C%20Gemini-fbbc04?style=flat-square" alt="AI"/>
+  <img src="https://img.shields.io/badge/privacy-first-ea4335?style=flat-square" alt="Privacy First"/>
+  <img src="https://img.shields.io/badge/license-MIT-6e7681?style=flat-square" alt="MIT License"/>
+</p>
+
+**Riorganizza Google Drive con AI cascade — privacy-first, zero upload di contenuti.**
+
+Uno strumento CLI Python che analizza i tuoi 16.000+ file, propone una struttura ordinata e la applica in un click. L'AI scala da Ollama locale (gratuita, offline) fino a Haiku/Opus o Gemini solo sui casi difficili — il contenuto dei file non raggiunge **mai** il cloud.
 
 ---
 

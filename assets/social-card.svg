@@ -1,0 +1,219 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d1117"/>
+      <stop offset="60%" style="stop-color:#0d1117"/>
+      <stop offset="100%" style="stop-color:#0f1f3d"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4285f4"/>
+      <stop offset="33%" style="stop-color:#34a853"/>
+      <stop offset="66%" style="stop-color:#fbbc04"/>
+      <stop offset="100%" style="stop-color:#ea4335"/>
+    </linearGradient>
+    <linearGradient id="terminal-bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#161b22"/>
+      <stop offset="100%" style="stop-color:#0d1117"/>
+    </linearGradient>
+    <linearGradient id="card-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4285f4" stop-opacity="0.15"/>
+      <stop offset="100%" style="stop-color:#34a853" stop-opacity="0.05"/>
+    </linearGradient>
+    <filter id="blur-soft">
+      <feGaussianBlur stdDeviation="40"/>
+    </filter>
+    <filter id="terminal-shadow">
+      <feDropShadow dx="0" dy="8" stdDeviation="24" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <clipPath id="terminal-clip">
+      <rect x="620" y="80" width="540" height="470" rx="12" ry="12"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Ambient glow blobs -->
+  <circle cx="200" cy="150" r="200" fill="#4285f4" opacity="0.04" filter="url(#blur-soft)"/>
+  <circle cx="900" cy="500" r="180" fill="#34a853" opacity="0.05" filter="url(#blur-soft)"/>
+  <circle cx="1100" cy="100" r="150" fill="#fbbc04" opacity="0.03" filter="url(#blur-soft)"/>
+
+  <!-- Top accent bar (Google Drive colors) -->
+  <rect x="0" y="0" width="1200" height="5" fill="url(#accent)"/>
+
+  <!-- LEFT SECTION — Branding + Features -->
+
+  <!-- App icon mini (56x56) -->
+  <rect x="60" y="80" width="64" height="64" rx="14" fill="#0f1f3d" stroke="#1a73e8" stroke-width="1.5"/>
+  <!-- Folder shape mini -->
+  <path d="M 74 118 L 74 113 Q 74 109 78 109 L 90 109 Q 94 109 96 113 L 98 118 Z" fill="#1a73e8" opacity="0.9"/>
+  <rect x="74" y="118" width="40" height="22" rx="3" fill="#1a73e8" opacity="0.75"/>
+  <!-- Mini bars -->
+  <rect x="79" y="122" width="10" height="3" rx="1.5" fill="#4285f4"/>
+  <rect x="79" y="127" width="16" height="3" rx="1.5" fill="#34a853"/>
+  <rect x="79" y="132" width="22" height="3" rx="1.5" fill="#fbbc04"/>
+  <!-- Mini circular arrow -->
+  <circle cx="108" cy="102" r="7" fill="none" stroke="#34a853" stroke-width="1.5"/>
+  <path d="M 108 96.5 A 5.5 5.5 0 1 1 102.5 107" fill="none" stroke="#34a853" stroke-width="1.5" stroke-linecap="round"/>
+  <polygon points="101,104 104,109 99,109" fill="#34a853"/>
+
+  <!-- App name -->
+  <text x="140" y="118" font-family="'Segoe UI', 'SF Pro Display', system-ui, sans-serif" font-size="42" font-weight="700" fill="#ffffff" letter-spacing="-1">Drive Organizer</text>
+
+  <!-- Version badge -->
+  <rect x="140" y="128" width="52" height="20" rx="4" fill="#1a73e8" opacity="0.3"/>
+  <rect x="140" y="128" width="52" height="20" rx="4" fill="none" stroke="#1a73e8" stroke-width="1"/>
+  <text x="166" y="143" font-family="'Segoe UI', monospace, sans-serif" font-size="11" font-weight="500" fill="#4285f4" text-anchor="middle">v1.0.0</text>
+
+  <!-- Tagline -->
+  <text x="60" y="195" font-family="'Segoe UI', 'SF Pro Display', system-ui, sans-serif" font-size="22" fill="#8b949e" letter-spacing="0.2">Riorganizza Google Drive con AI cascade — privacy-first</text>
+
+  <!-- Divider -->
+  <line x1="60" y1="225" x2="560" y2="225" stroke="#21262d" stroke-width="1"/>
+
+  <!-- Features list -->
+  <!-- Feature 1 -->
+  <circle cx="80" cy="266" r="20" fill="#0f1f3d"/>
+  <text x="80" y="273" font-size="18" text-anchor="middle" fill="#4285f4">⚡</text>
+  <text x="112" y="263" font-family="'Segoe UI', system-ui, sans-serif" font-size="16" font-weight="600" fill="#e6edf3">4 Strategie di organizzazione</text>
+  <text x="112" y="282" font-family="'Segoe UI', system-ui, sans-serif" font-size="14" fill="#6e7681">tipo · data · progetto · tassonomia custom JSON</text>
+
+  <!-- Feature 2 -->
+  <circle cx="80" cy="326" r="20" fill="#0f1a12"/>
+  <text x="80" y="333" font-size="18" text-anchor="middle" fill="#34a853">🔒</text>
+  <text x="112" y="323" font-family="'Segoe UI', system-ui, sans-serif" font-size="16" font-weight="600" fill="#e6edf3">Privacy totale garantita</text>
+  <text x="112" y="342" font-family="'Segoe UI', system-ui, sans-serif" font-size="14" fill="#6e7681">solo metadati al cloud — contenuto mai scaricato</text>
+
+  <!-- Feature 3 -->
+  <circle cx="80" cy="386" r="20" fill="#1a1400"/>
+  <text x="80" y="393" font-size="18" text-anchor="middle" fill="#fbbc04">🤖</text>
+  <text x="112" y="383" font-family="'Segoe UI', system-ui, sans-serif" font-size="16" font-weight="600" fill="#e6edf3">AI Cascade 3 livelli</text>
+  <text x="112" y="402" font-family="'Segoe UI', system-ui, sans-serif" font-size="14" fill="#6e7681">Ollama → Haiku/Gemini Flash → Opus/Gemini Pro</text>
+
+  <!-- Feature 4 -->
+  <circle cx="80" cy="446" r="20" fill="#1a0f0f"/>
+  <text x="80" y="453" font-size="18" text-anchor="middle" fill="#ea4335">↩</text>
+  <text x="112" y="443" font-family="'Segoe UI', system-ui, sans-serif" font-size="16" font-weight="600" fill="#e6edf3">Rollback completo</text>
+  <text x="112" y="462" font-family="'Segoe UI', system-ui, sans-serif" font-size="14" fill="#6e7681">ogni operazione è annullabile • multi-account</text>
+
+  <!-- Stats row -->
+  <rect x="60" y="510" width="530" height="66" rx="10" fill="#161b22" stroke="#21262d" stroke-width="1"/>
+
+  <!-- Stat 1 -->
+  <text x="138" y="537" font-family="'Segoe UI', system-ui, sans-serif" font-size="24" font-weight="700" fill="#4285f4" text-anchor="middle">16K+</text>
+  <text x="138" y="558" font-family="'Segoe UI', system-ui, sans-serif" font-size="12" fill="#6e7681" text-anchor="middle">file gestiti</text>
+  <line x1="215" y1="520" x2="215" y2="566" stroke="#21262d" stroke-width="1"/>
+
+  <!-- Stat 2 -->
+  <text x="293" y="537" font-family="'Segoe UI', system-ui, sans-serif" font-size="24" font-weight="700" fill="#34a853" text-anchor="middle">367</text>
+  <text x="293" y="558" font-family="'Segoe UI', system-ui, sans-serif" font-size="12" fill="#6e7681" text-anchor="middle">duplicati trovati</text>
+  <line x1="370" y1="520" x2="370" y2="566" stroke="#21262d" stroke-width="1"/>
+
+  <!-- Stat 3 -->
+  <text x="448" y="537" font-family="'Segoe UI', system-ui, sans-serif" font-size="24" font-weight="700" fill="#fbbc04" text-anchor="middle">3</text>
+  <text x="448" y="558" font-family="'Segoe UI', system-ui, sans-serif" font-size="12" fill="#6e7681" text-anchor="middle">livelli AI</text>
+  <line x1="525" y1="520" x2="525" y2="566" stroke="#21262d" stroke-width="1"/>
+
+  <!-- Stat 4 -->
+  <text x="555" y="537" font-family="'Segoe UI', system-ui, sans-serif" font-size="20" font-weight="700" fill="#ea4335" text-anchor="middle">EXE</text>
+  <text x="555" y="558" font-family="'Segoe UI', system-ui, sans-serif" font-size="12" fill="#6e7681" text-anchor="middle">standalone</text>
+
+  <!-- RIGHT SECTION — Terminal mockup -->
+  <g filter="url(#terminal-shadow)">
+    <!-- Terminal window -->
+    <rect x="620" y="80" width="540" height="470" rx="12" fill="url(#terminal-bg)" stroke="#30363d" stroke-width="1"/>
+
+    <!-- Terminal title bar -->
+    <rect x="620" y="80" width="540" height="38" rx="12" fill="#161b22"/>
+    <rect x="620" y="104" width="540" height="14" fill="#161b22"/>
+
+    <!-- Traffic light buttons -->
+    <circle cx="648" cy="99" r="7" fill="#ff5f57"/>
+    <circle cx="668" cy="99" r="7" fill="#ffbd2e"/>
+    <circle cx="688" cy="99" r="7" fill="#28c840"/>
+
+    <!-- Title -->
+    <text x="890" y="104" font-family="'Segoe UI', monospace, sans-serif" font-size="13" fill="#6e7681" text-anchor="middle">drive-organizer</text>
+
+    <!-- Terminal content -->
+    <!-- Prompt + command -->
+    <text x="648" y="148" font-family="'JetBrains Mono', 'Fira Code', 'Courier New', monospace" font-size="13.5" fill="#6e7681">❯</text>
+    <text x="666" y="148" font-family="'JetBrains Mono', 'Fira Code', 'Courier New', monospace" font-size="13.5" fill="#c9d1d9">drive-organizer</text>
+    <text x="822" y="148" font-family="'JetBrains Mono', 'Fira Code', 'Courier New', monospace" font-size="13.5" fill="#58a6ff">status</text>
+
+    <!-- Output lines -->
+    <text x="648" y="175" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12" fill="#8b949e">Connessione a Google Drive…</text>
+
+    <!-- Table border top -->
+    <text x="648" y="198" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#21262d">┌──────────────────────┬───────────────────────────┐</text>
+    <text x="648" y="216" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#6e7681">│</text>
+    <text x="660" y="216" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#8b949e"> Google Drive         </text>
+    <text x="787" y="216" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#6e7681">│</text>
+    <text x="799" y="216" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#3fb950"> Connesso ✓           </text>
+    <text x="1009" y="216" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#6e7681">│</text>
+    <text x="648" y="231" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#21262d">├──────────────────────┼───────────────────────────┤</text>
+    <text x="648" y="248" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#6e7681">│</text>
+    <text x="660" y="248" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#8b949e"> Storage              </text>
+    <text x="787" y="248" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#6e7681">│</text>
+    <text x="799" y="248" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#c9d1d9"> 6.14 GB / 15 GB      </text>
+    <text x="1009" y="248" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#6e7681">│</text>
+    <text x="648" y="263" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#21262d">├──────────────────────┼───────────────────────────┤</text>
+    <text x="648" y="280" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#6e7681">│</text>
+    <text x="660" y="280" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#8b949e"> Ollama               </text>
+    <text x="787" y="280" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#6e7681">│</text>
+    <text x="799" y="280" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#3fb950"> qwen3:8b ✓           </text>
+    <text x="1009" y="280" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#6e7681">│</text>
+    <text x="648" y="295" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#21262d">├──────────────────────┼───────────────────────────┤</text>
+    <text x="648" y="312" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#6e7681">│</text>
+    <text x="660" y="312" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#8b949e"> Haiku / Gemini Flash </text>
+    <text x="787" y="312" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#6e7681">│</text>
+    <text x="799" y="312" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#3fb950"> Anthropic ✓          </text>
+    <text x="1009" y="312" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#6e7681">│</text>
+    <text x="648" y="327" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="11.5" fill="#21262d">└──────────────────────┴───────────────────────────┘</text>
+
+    <!-- File count -->
+    <text x="648" y="358" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12" fill="#8b949e">Scansione in corso…</text>
+
+    <!-- Stats table -->
+    <text x="648" y="385" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#6e7681">┌──────────────┬───────────┐</text>
+    <text x="648" y="402" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#6e7681">│</text>
+    <text x="660" y="402" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#8b949e"> Immagini     </text>
+    <text x="788" y="402" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#6e7681">│</text>
+    <text x="800" y="402" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#4285f4">   886</text>
+    <text x="860" y="402" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#6e7681">     │</text>
+    <text x="648" y="419" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#6e7681">│</text>
+    <text x="660" y="419" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#8b949e"> Video        </text>
+    <text x="788" y="419" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#6e7681">│</text>
+    <text x="800" y="419" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#ea4335">   385</text>
+    <text x="860" y="419" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#6e7681">     │</text>
+    <text x="648" y="436" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#6e7681">│</text>
+    <text x="660" y="436" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#8b949e"> PDF          </text>
+    <text x="788" y="436" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#6e7681">│</text>
+    <text x="800" y="436" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#fbbc04">   319</text>
+    <text x="860" y="436" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#6e7681">     │</text>
+    <text x="648" y="453" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="12.5" fill="#6e7681">└──────────────┴───────────┘</text>
+
+    <!-- Bottom prompt -->
+    <text x="648" y="490" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="13.5" fill="#6e7681">❯</text>
+    <text x="666" y="490" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="13.5" fill="#c9d1d9">drive-organizer organize -s</text>
+    <text x="893" y="490" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="13.5" fill="#58a6ff"> type</text>
+    <!-- Blinking cursor -->
+    <rect x="949" y="477" width="9" height="16" fill="#58a6ff" opacity="0.8"/>
+
+    <!-- Glow on terminal -->
+    <rect x="620" y="80" width="540" height="470" rx="12" fill="url(#card-glow)" opacity="0.3"/>
+  </g>
+
+  <!-- Bottom bar -->
+  <rect x="0" y="595" width="1200" height="35" fill="#161b22"/>
+  <text x="60" y="618" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" fill="#6e7681">Python 3.11+</text>
+  <text x="175" y="618" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" fill="#21262d">•</text>
+  <text x="190" y="618" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" fill="#6e7681">Google Drive API v3</text>
+  <text x="345" y="618" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" fill="#21262d">•</text>
+  <text x="360" y="618" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" fill="#6e7681">Ollama · Claude · Gemini</text>
+  <text x="545" y="618" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" fill="#21262d">•</text>
+  <text x="560" y="618" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" fill="#6e7681">Windows · macOS · Linux</text>
+  <text x="760" y="618" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" fill="#21262d">•</text>
+  <text x="775" y="618" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" fill="#6e7681">MIT License</text>
+  <text x="1060" y="618" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" fill="#4285f4" text-anchor="end">github.com/giandemoncell-prog</text>
+</svg>

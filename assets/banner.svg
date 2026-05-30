@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 280" width="1200" height="280">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d1117"/>
+      <stop offset="100%" style="stop-color:#0f1f3d"/>
+    </linearGradient>
+    <linearGradient id="accent-line" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4285f4"/>
+      <stop offset="33%" style="stop-color:#34a853"/>
+      <stop offset="66%" style="stop-color:#fbbc04"/>
+      <stop offset="100%" style="stop-color:#ea4335"/>
+    </linearGradient>
+    <linearGradient id="pill-blue" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1a3a6e"/>
+      <stop offset="100%" style="stop-color:#0d2244"/>
+    </linearGradient>
+    <linearGradient id="pill-green" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0d3320"/>
+      <stop offset="100%" style="stop-color:#062214"/>
+    </linearGradient>
+    <filter id="blur-soft">
+      <feGaussianBlur stdDeviation="50"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="280" fill="url(#bg)"/>
+
+  <!-- Ambient glow -->
+  <circle cx="140" cy="140" r="180" fill="#4285f4" opacity="0.05" filter="url(#blur-soft)"/>
+  <circle cx="1060" cy="140" r="160" fill="#34a853" opacity="0.05" filter="url(#blur-soft)"/>
+
+  <!-- Top accent bar -->
+  <rect x="0" y="0" width="1200" height="4" fill="url(#accent-line)"/>
+
+  <!-- App icon (72x72) -->
+  <rect x="48" y="104" width="72" height="72" rx="16" fill="#0f1f3d" stroke="#1a73e8" stroke-width="1.5"/>
+  <!-- Folder -->
+  <path d="M 62 152 L 62 145 Q 62 140 67 140 L 82 140 Q 87 140 89 145 L 92 152 Z" fill="#1a73e8" opacity="0.9"/>
+  <rect x="62" y="152" width="48" height="15" rx="3" fill="#1a73e8" opacity="0.75"/>
+  <rect x="67" y="156" width="12" height="3" rx="1.5" fill="#4285f4"/>
+  <rect x="67" y="161" width="20" height="3" rx="1.5" fill="#34a853"/>
+  <rect x="67" y="166" width="28" height="3" rx="1.5" fill="#fbbc04"/>
+  <!-- Circular arrow -->
+  <circle cx="106" cy="143" r="8" fill="none" stroke="#34a853" stroke-width="1.8"/>
+  <path d="M 106 136.5 A 6.5 6.5 0 1 1 100 150" fill="none" stroke="#34a853" stroke-width="1.8" stroke-linecap="round"/>
+  <polygon points="98.5,147 102,152.5 96,152" fill="#34a853"/>
+
+  <!-- App name -->
+  <text x="140" y="152" font-family="'Segoe UI', 'SF Pro Display', system-ui, sans-serif" font-size="52" font-weight="700" fill="#ffffff" letter-spacing="-1.5">Drive Organizer</text>
+
+  <!-- Tagline -->
+  <text x="140" y="186" font-family="'Segoe UI', 'SF Pro Text', system-ui, sans-serif" font-size="20" fill="#8b949e" letter-spacing="0.3">Riorganizza Google Drive con AI cascade — privacy-first, zero upload di contenuti</text>
+
+  <!-- Feature pills row -->
+  <!-- Pill 1 -->
+  <rect x="140" y="210" width="145" height="30" rx="15" fill="url(#pill-blue)" stroke="#1a73e8" stroke-width="1"/>
+  <text x="213" y="230" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="500" fill="#4285f4" text-anchor="middle">⚡ 4 strategie AI</text>
+
+  <!-- Pill 2 -->
+  <rect x="296" y="210" width="145" height="30" rx="15" fill="url(#pill-green)" stroke="#34a853" stroke-width="1"/>
+  <text x="369" y="230" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="500" fill="#34a853" text-anchor="middle">🔒 Privacy-first</text>
+
+  <!-- Pill 3 -->
+  <rect x="452" y="210" width="152" height="30" rx="15" fill="#1a1400" stroke="#fbbc04" stroke-width="1" opacity="0.9"/>
+  <text x="528" y="230" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="500" fill="#fbbc04" text-anchor="middle">↩ Rollback totale</text>
+
+  <!-- Pill 4 -->
+  <rect x="615" y="210" width="145" height="30" rx="15" fill="#1a0a0a" stroke="#ea4335" stroke-width="1" opacity="0.9"/>
+  <text x="688" y="230" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="500" fill="#ea4335" text-anchor="middle">🪟 EXE standalone</text>
+
+  <!-- Right side: platform badges -->
+  <text x="1150" y="134" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" fill="#4285f4" text-anchor="end">Windows · macOS · Linux</text>
+  <text x="1150" y="156" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" fill="#6e7681" text-anchor="end">Python 3.11+ · MIT License</text>
+  <text x="1150" y="178" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" fill="#6e7681" text-anchor="end">Ollama · Claude · Gemini</text>
+  <text x="1150" y="200" font-family="'Segoe UI', system-ui, sans-serif" font-size="12" fill="#30363d" text-anchor="end">github.com/giandemoncell-prog/drive-organizer</text>
+
+  <!-- Version badge (top right) -->
+  <rect x="1082" y="24" width="70" height="24" rx="12" fill="#1a73e8" opacity="0.2" stroke="#1a73e8" stroke-width="1"/>
+  <text x="1117" y="41" font-family="'Segoe UI', monospace, sans-serif" font-size="12" font-weight="600" fill="#4285f4" text-anchor="middle">v 1.0.0</text>
+
+  <!-- Bottom border -->
+  <rect x="0" y="276" width="1200" height="4" fill="url(#accent-line)" opacity="0.3"/>
+</svg>
