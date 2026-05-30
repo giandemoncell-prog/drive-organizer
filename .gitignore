@@ -1,0 +1,16 @@
+.env
+credentials.json
+token.json
+tokens/
+logs/
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+dist/
+dist_windows/
+build/drive_organizer/
+*.egg-info/
+.pytest_cache/
+dist_windows/

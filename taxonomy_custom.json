@@ -1,0 +1,62 @@
+{
+  "folders": [
+    "01_Immobili",
+    "02_Spese e Bollette",
+    "03_Veicoli",
+    "04_Personale",
+    "05_Lavoro",
+    "06_Progetti e Hobby",
+    "07_Viaggio Canarie",
+    "08_Libro_IA",
+    "09_SerenaInfissi",
+    "10_Software",
+    "99_Archivio"
+  ],
+  "rules": [
+    {
+      "match": "immobili OR immobile OR quartucciu OR affitto OR affitti OR mutuo OR rogito OR catasto OR locazione OR condominio OR spettu OR via nazionale OR canone OR inquilino OR appartamento OR rendita",
+      "target": "01_Immobili"
+    },
+    {
+      "match": "bolletta OR bollette OR utenza OR enel OR tim OR vodafone OR wind OR assicurazione OR polizza OR rata OR ricevuta pagamento OR f24 OR tributo OR IMU OR TARI OR conguaglio OR estratto conto OR rendiconto OR addebito OR part-time OR domanda rientro",
+      "target": "02_Spese e Bollette"
+    },
+    {
+      "match": "veicolo OR autovettura OR bollo auto OR revisione OR collaudo OR officina OR carrozzeria OR meccanico OR patente OR libretto circolazione OR sinistro OR multa OR ZTL",
+      "target": "03_Veicoli"
+    },
+    {
+      "match": "passaporto OR carta identità OR codice fiscale OR tessera sanitaria OR stato di famiglia OR certificato nascita OR diploma OR laurea OR anagrafe OR ricetta OR referto OR visita medica OR diagnosi OR curriculum OR furto identità OR querela",
+      "target": "04_Personale"
+    },
+    {
+      "match": "busta paga OR stipendio OR modello 730 OR dichiarazione redditi OR IRPEF OR partita IVA OR nota spese OR rimborso spese OR contratto di lavoro OR sindacale OR CCNL OR TFR OR liquidazione OR datore di lavoro OR fee information OR documentazione fotografica balcone",
+      "target": "05_Lavoro"
+    },
+    {
+      "match": "bachata OR vibes OR musicale OR canzone OR brano OR remix OR cover OR artwork OR thumbnail OR tiktok OR instagram OR youtube OR social OR suno OR festival OR salsa OR merengue OR danza OR ballo OR reel OR storia OR mp3 OR mp4 OR retention OR analytics OR optimizer OR scrape",
+      "target": "06_Progetti e Hobby"
+    },
+    {
+      "match": "canarie OR lanzarote OR tenerife OR fuerteventura OR gran canaria OR viaggio OR vacanza OR hotel OR prenotazione OR booking OR reserva OR deposito OR hodeia OR urahotels OR alloggio OR escursione OR itinerario OR foto aereo OR volo cagliari",
+      "target": "07_Viaggio Canarie"
+    },
+    {
+      "match": "DSA OR dislessia OR discalculia OR disgrafia OR BES OR PEI OR PDP OR inclusione scolastica OR materiale didattico OR libro IA OR gemini OR prompt AI OR intelligenza artificiale OR kindle OR KDP OR manoscritto OR capitolo OR bozza libro OR generatore materiali OR intervista studente",
+      "target": "08_Libro_IA"
+    },
+    {
+      "match": "infissi OR infisso OR serena infissi OR finestra OR porta blindata OR portoncino OR serramento OR persiana OR tapparella OR montaggio infissi OR preventivo infissi OR fattura infissi OR detrazioni fiscali OR ecobonus",
+      "target": "09_SerenaInfissi"
+    },
+    {
+      "match": ".py OR .sh OR .js OR .ts OR .yaml OR .yml OR .toml OR .bat OR .ps1 OR script OR programmazione OR deploy OR install OR setup OR chromebook OR raspberry OR server OR linux OR docker OR workflow OR n8n OR playwright OR selenium OR automazione",
+      "target": "10_Software"
+    },
+    {
+      "match": "archivio OR vecchio OR backup OR obsoleto OR 2019 OR 2020 OR 2021 OR tmp OR temp OR part001 OR part002 OR .b64 OR .eml OR .log",
+      "target": "99_Archivio"
+    }
+  ],
+  "fallback_folder": "99_Archivio"
+}
