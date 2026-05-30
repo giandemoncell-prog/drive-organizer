@@ -1,96 +1,136 @@
 @echo off
 chcp 65001 >nul
+setlocal enabledelayedexpansion
+
+:: Cartella radice del progetto (una sopra rispetto a build\)
+set "ROOT=%~dp0.."
+set "VERSION=1.0.0"
+
 echo ============================================
-echo  Drive Organizer — Build Windows
+echo  Drive Organizer v%VERSION% — Build Windows
 echo ============================================
 echo.
 
-:: Verifica Python
+:: Verifica Python 3.11+
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [ERRORE] Python non trovato. Installa Python 3.11+ da python.org
+    echo [ERRORE] Python non trovato nel PATH.
+    echo Installa Python 3.11+ da https://python.org e riprova.
     pause
     exit /b 1
 )
+for /f "tokens=2 delims= " %%v in ('python --version 2^>^&1') do set PY_VER=%%v
+echo Python rilevato: %PY_VER%
 
 :: Verifica credentials.json
-if not exist "..\credentials.json" (
-    echo [ERRORE] credentials.json non trovato nella cartella principale.
-    echo Scaricalo da Google Cloud Console e mettilo in Drive Organizer\credentials.json
+if not exist "%ROOT%\credentials.json" (
+    echo.
+    echo [ERRORE] credentials.json non trovato.
+    echo Scaricalo da Google Cloud Console ^> OAuth 2.0 ^> App Desktop
+    echo e salvalo in: %ROOT%\credentials.json
     pause
     exit /b 1
 )
 
-:: Installa dipendenze build
-echo Installazione dipendenze...
-pip install pyinstaller --quiet
-pip install -r ..\requirements.txt --quiet
-
-:: Build
+:: Installa dipendenze
 echo.
-echo Build in corso (potrebbe richiedere qualche minuto)...
-cd ..
-pyinstaller drive_organizer.spec --clean --noconfirm
-cd build
+echo [1/4] Installazione dipendenze Python...
+python -m pip install pyinstaller --quiet --upgrade
+if errorlevel 1 (
+    echo [ERRORE] pip install pyinstaller fallito.
+    pause
+    exit /b 1
+)
+python -m pip install -r "%ROOT%\requirements.txt" --quiet
+if errorlevel 1 (
+    echo [ERRORE] pip install requirements.txt fallito.
+    pause
+    exit /b 1
+)
 
+:: Build PyInstaller
+echo.
+echo [2/4] Build eseguibile con PyInstaller...
+cd /d "%ROOT%"
+python -m PyInstaller drive_organizer.spec --clean --noconfirm
 if errorlevel 1 (
     echo.
-    echo [ERRORE] Build fallita. Controlla i messaggi sopra.
+    echo [ERRORE] Build PyInstaller fallita. Controlla i messaggi sopra.
+    cd /d "%~dp0"
+    pause
+    exit /b 1
+)
+cd /d "%~dp0"
+
+:: Verifica che l'exe sia stato creato
+if not exist "%ROOT%\dist\drive-organizer.exe" (
+    echo [ERRORE] drive-organizer.exe non trovato in dist\ dopo la build.
     pause
     exit /b 1
 )
 
-:: Crea cartella distribuzione
+:: Pacchetto distribuzione
 echo.
-echo Preparazione pacchetto distribuzione...
-if exist "dist_windows" rmdir /s /q "dist_windows"
-mkdir "dist_windows"
-copy "..\dist\drive-organizer.exe" "dist_windows\"
-copy "..\MANUALE.md" "dist_windows\"
-copy "..\taxonomy_custom.json" "dist_windows\"
-copy "..\assets\icon.ico" "dist_windows\"
-copy "..\.env.example" "dist_windows\"
+echo [3/4] Preparazione pacchetto distribuzione...
+set "DIST=%ROOT%\dist_windows"
+if exist "%DIST%" rmdir /s /q "%DIST%"
+mkdir "%DIST%"
 
-:: Crea LEGGIMI.txt per utenti non tecnici
+copy "%ROOT%\dist\drive-organizer.exe"  "%DIST%\" >nul
+copy "%ROOT%\MANUALE.md"               "%DIST%\" >nul
+copy "%ROOT%\taxonomy_custom.json"     "%DIST%\" >nul
+copy "%ROOT%\assets\icon.ico"          "%DIST%\" >nul
+copy "%ROOT%\.env.example"             "%DIST%\" >nul
+
+:: LEGGIMI.txt per utenti non tecnici
 (
 echo ============================================
-echo  Drive Organizer — Guida rapida
+echo  Drive Organizer v%VERSION% — Guida rapida
 echo ============================================
 echo.
 echo PRIMO AVVIO:
-echo   1. Fai doppio clic su drive-organizer.exe
-echo   2. Si apre il terminale — segui le istruzioni
-echo   3. Il browser si aprira' per il login Google
-echo.
-echo OPPURE apri il Prompt dei comandi in questa cartella e digita:
-echo   drive-organizer.exe setup
+echo   Fai doppio clic su drive-organizer.exe
+echo   oppure apri il Prompt dei comandi qui e digita:
+echo     drive-organizer.exe setup
 echo.
 echo COMANDI PRINCIPALI:
-echo   drive-organizer.exe setup                          — primo avvio guidato
-echo   drive-organizer.exe organize --strategy type       — preview per tipo
-echo   drive-organizer.exe organize --strategy type --apply  — applica
-echo   drive-organizer.exe rollback                       — annulla modifiche
+echo   drive-organizer.exe setup                            Prima configurazione guidata
+echo   drive-organizer.exe status                           Stato Drive e AI
+echo   drive-organizer.exe organize -s type                 Preview organizzazione per tipo
+echo   drive-organizer.exe organize -s type --apply         Applica organizzazione
+echo   drive-organizer.exe organize -s custom -t taxonomy_custom.json
+echo   drive-organizer.exe rename                           Rinomina con AI locale
+echo   drive-organizer.exe duplicates                       Trova duplicati
+echo   drive-organizer.exe rollback                         Annulla ultima operazione
 echo.
 echo Per il manuale completo apri MANUALE.md
 echo ============================================
-) > "dist_windows\LEGGIMI.txt"
+) > "%DIST%\LEGGIMI.txt"
+
+:: Installer Inno Setup (opzionale)
+echo.
+echo [4/4] Creazione installer...
+where iscc >nul 2>&1
+if not errorlevel 1 (
+    iscc "%~dp0setup.iss"
+    if not errorlevel 1 (
+        echo Installer creato: build\DriveOrganizer_Setup.exe
+    ) else (
+        echo [AVVISO] Inno Setup ha riportato un errore. Controlla setup.iss.
+    )
+) else (
+    echo [INFO] Inno Setup non trovato — viene prodotto solo il pacchetto zip.
+    echo Per il vero installer: https://jrsoftware.org/isinfo.php
+    powershell -Command "Compress-Archive -Path '%DIST%\*' -DestinationPath '%ROOT%\DriveOrganizer_v%VERSION%_Windows.zip' -Force"
+    echo ZIP creato: DriveOrganizer_v%VERSION%_Windows.zip
+)
 
 echo.
 echo ============================================
 echo  Build completata!
-echo  File: build\dist_windows\drive-organizer.exe
+echo  Pacchetto: dist_windows\
+echo  EXE:       dist_windows\drive-organizer.exe
 echo ============================================
 echo.
-
-:: Opzionale: crea installer con Inno Setup se disponibile
-where iscc >nul 2>&1
-if not errorlevel 1 (
-    echo Inno Setup trovato — creazione installer...
-    iscc setup.iss
-    echo Installer creato: build\DriveOrganizer_Setup.exe
-) else (
-    echo [INFO] Inno Setup non trovato — solo eseguibile standalone.
-    echo Per creare un installer scarica Inno Setup da jrsoftware.org/isinfo.php
-)
-
 pause
+endlocal

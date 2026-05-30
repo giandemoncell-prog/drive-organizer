@@ -1,139 +1,180 @@
 #!/bin/bash
-set -e
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$SCRIPT_DIR/.."
+VERSION="1.0.0"
 
 echo "============================================"
-echo " Drive Organizer — Build Linux / Chrome OS"
+echo " Drive Organizer v$VERSION — Build Linux / Chrome OS"
 echo "============================================"
 echo
 
-# Verifica Python
+# Verifica Python 3.11+
 if ! command -v python3 &>/dev/null; then
     echo "[ERRORE] Python3 non trovato."
-    echo "Installa con: sudo apt install python3 python3-pip"
+    echo "Installa con: sudo apt install python3 python3-pip python3-venv"
     exit 1
 fi
+PY_VER=$(python3 --version 2>&1)
+echo "Python rilevato: $PY_VER"
 
 # Verifica credentials.json
-if [ ! -f "../credentials.json" ]; then
-    echo "[ERRORE] credentials.json non trovato."
-    echo "Scaricalo da Google Cloud Console e mettilo in Drive_Organizer/credentials.json"
+if [ ! -f "$ROOT/credentials.json" ]; then
+    echo
+    echo "[ERRORE] credentials.json non trovato in: $ROOT"
+    echo "Scaricalo da Google Cloud Console → OAuth 2.0 → App Desktop"
     exit 1
 fi
 
-# Dipendenze build
-echo "Installazione dipendenze..."
-pip3 install pyinstaller --quiet
-pip3 install -r ../requirements.txt --quiet
+# Dipendenze
+echo
+echo "[1/4] Installazione dipendenze Python..."
+python3 -m pip install pyinstaller --quiet --upgrade
+python3 -m pip install -r "$ROOT/requirements.txt" --quiet
 
 # Build
 echo
-echo "Build in corso..."
-cd ..
-pyinstaller drive_organizer.spec --clean --noconfirm
-cd build
+echo "[2/4] Build eseguibile con PyInstaller..."
+cd "$ROOT"
+python3 -m PyInstaller drive_organizer.spec --clean --noconfirm
+cd "$SCRIPT_DIR"
+
+if [ ! -f "$ROOT/dist/drive-organizer" ]; then
+    echo "[ERRORE] Eseguibile non trovato dopo la build."
+    exit 1
+fi
 
 # Pacchetto distribuzione
 echo
-echo "Preparazione pacchetto..."
-rm -rf dist_linux
-mkdir dist_linux
-cp ../dist/drive-organizer dist_linux/
-cp ../MANUALE.md dist_linux/
-cp ../taxonomy_custom.json dist_linux/
-chmod +x dist_linux/drive-organizer
+echo "[3/4] Preparazione pacchetto distribuzione..."
+DIST="$ROOT/dist_linux"
+rm -rf "$DIST"
+mkdir -p "$DIST"
+
+cp "$ROOT/dist/drive-organizer"  "$DIST/"
+cp "$ROOT/MANUALE.md"            "$DIST/"
+cp "$ROOT/taxonomy_custom.json"  "$DIST/"
+cp "$ROOT/.env.example"          "$DIST/"
+chmod +x "$DIST/drive-organizer"
 
 # Script di installazione sistema
-cat > dist_linux/install.sh << 'INSTALL_EOF'
+cat > "$DIST/install.sh" << 'INSTALL_EOF'
 #!/bin/bash
-set -e
+set -euo pipefail
 INSTALL_DIR="$HOME/.local/bin"
-APP_DIR="$HOME/.drive-organizer"
+APP_DIR="$HOME/.config/drive-organizer"
 
-mkdir -p "$INSTALL_DIR"
-mkdir -p "$APP_DIR"
+echo "============================================"
+echo " Drive Organizer — Installazione"
+echo "============================================"
+echo
+
+mkdir -p "$INSTALL_DIR" "$APP_DIR"
 
 cp drive-organizer "$INSTALL_DIR/"
-cp taxonomy_custom.json "$APP_DIR/"
-cp MANUALE.md "$APP_DIR/"
+cp taxonomy_custom.json "$APP_DIR/" 2>/dev/null || true
+cp MANUALE.md "$APP_DIR/" 2>/dev/null || true
+cp .env.example "$APP_DIR/.env.example" 2>/dev/null || true
 
-# Aggiungi ~/.local/bin al PATH se non c'è
-if ! grep -q '$HOME/.local/bin' "$HOME/.bashrc" 2>/dev/null; then
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
-fi
-if ! grep -q '$HOME/.local/bin' "$HOME/.zshrc" 2>/dev/null; then
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc" 2>/dev/null || true
-fi
+# Aggiunge ~/.local/bin al PATH se mancante
+for RC in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+    if [ -f "$RC" ] && ! grep -q '$HOME/.local/bin' "$RC"; then
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC"
+    fi
+done
 
 echo
-echo "============================================"
-echo " Drive Organizer installato!"
-echo "============================================"
+echo "Installazione completata!"
 echo
 echo "Riapri il terminale e digita:"
 echo "  drive-organizer setup"
 echo
-echo "Per il manuale: $APP_DIR/MANUALE.md"
+echo "File di configurazione: $APP_DIR/"
 echo "============================================"
 INSTALL_EOF
-chmod +x dist_linux/install.sh
+chmod +x "$DIST/install.sh"
+
+# Script di disinstallazione
+cat > "$DIST/uninstall.sh" << 'UNINSTALL_EOF'
+#!/bin/bash
+echo "Rimozione Drive Organizer..."
+rm -f "$HOME/.local/bin/drive-organizer"
+rm -rf "$HOME/.config/drive-organizer"
+echo "Drive Organizer rimosso."
+UNINSTALL_EOF
+chmod +x "$DIST/uninstall.sh"
 
 # LEGGIMI
-cat > dist_linux/LEGGIMI.txt << 'EOF'
+cat > "$DIST/LEGGIMI.txt" << EOF
 ============================================
- Drive Organizer — Guida rapida Linux
+ Drive Organizer v$VERSION — Guida rapida Linux
 ============================================
 
-INSTALLAZIONE:
+INSTALLAZIONE (consigliata):
   Apri il terminale in questa cartella e digita:
-    chmod +x install.sh
-    ./install.sh
-  Poi riapri il terminale e digita:
+    chmod +x install.sh && ./install.sh
+  Poi riapri il terminale:
     drive-organizer setup
 
 SENZA INSTALLAZIONE (esegui direttamente):
   ./drive-organizer setup
 
-CHROME OS (Linux via Crostini):
-  Abilita Linux in Impostazioni > Sviluppatori > Ambiente Linux
-  Poi segui le istruzioni sopra dal terminale Linux
+CHROME OS (Crostini):
+  Impostazioni → Sviluppatori → Ambiente Linux → Attiva
+  Poi segui le istruzioni di installazione sopra.
 
 COMANDI PRINCIPALI:
-  drive-organizer setup                           — primo avvio guidato
-  drive-organizer organize --strategy type        — preview per tipo
-  drive-organizer organize --strategy type --apply — applica
-  drive-organizer rollback                        — annulla modifiche
+  drive-organizer setup
+  drive-organizer status
+  drive-organizer organize -s type
+  drive-organizer organize -s type --apply
+  drive-organizer rollback
 
-Per il manuale completo apri MANUALE.md
+DISINSTALLAZIONE:
+  ./uninstall.sh
+
+Per il manuale completo: MANUALE.md
 ============================================
 EOF
 
-# Crea tar.gz distribuzione
-tar -czf DriveOrganizer_linux.tar.gz -C dist_linux .
-echo "Archivio creato: build/DriveOrganizer_linux.tar.gz"
+# Pacchetto finale
+echo
+echo "[4/4] Creazione archivio distribuzione..."
+TAR="$ROOT/DriveOrganizer_v${VERSION}_Linux.tar.gz"
+tar -czf "$TAR" -C "$DIST" .
+echo "Archivio creato: DriveOrganizer_v${VERSION}_Linux.tar.gz"
 
-# AppImage se appimagetool disponibile
+# AppImage (opzionale)
 if command -v appimagetool &>/dev/null; then
     echo "Creazione AppImage..."
-    mkdir -p AppDir/usr/bin
-    cp dist_linux/drive-organizer AppDir/usr/bin/
-    cat > AppDir/AppRun << 'APPRUN'
+    APPDIR="$ROOT/AppDir"
+    rm -rf "$APPDIR"
+    mkdir -p "$APPDIR/usr/bin"
+    cp "$DIST/drive-organizer" "$APPDIR/usr/bin/"
+
+    cat > "$APPDIR/AppRun" << 'APPRUN'
 #!/bin/bash
 exec "$APPDIR/usr/bin/drive-organizer" "$@"
 APPRUN
-    chmod +x AppDir/AppRun
-    cat > AppDir/drive-organizer.desktop << 'DESKTOP'
+    chmod +x "$APPDIR/AppRun"
+
+    cat > "$APPDIR/drive-organizer.desktop" << 'DESKTOP'
 [Desktop Entry]
 Name=Drive Organizer
 Exec=drive-organizer
 Type=Application
 Categories=Utility;
 DESKTOP
-    appimagetool AppDir DriveOrganizer.AppImage
-    echo "AppImage creata: build/DriveOrganizer.AppImage"
+
+    ARCH=$(uname -m) appimagetool "$APPDIR" "$ROOT/DriveOrganizer_v${VERSION}_Linux.AppImage"
+    rm -rf "$APPDIR"
+    echo "AppImage creata: DriveOrganizer_v${VERSION}_Linux.AppImage"
 fi
 
 echo
 echo "============================================"
 echo " Build completata!"
-echo " File: build/DriveOrganizer_linux.tar.gz"
+echo " Pacchetto: dist_linux/"
+echo " Archivio:  DriveOrganizer_v${VERSION}_Linux.tar.gz"
 echo "============================================"

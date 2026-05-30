@@ -1,16 +1,31 @@
+# Credenziali e token — mai committare
 .env
 credentials.json
 token.json
 tokens/
+
+# Output build — generati dagli script
+dist/
+dist_windows/
+dist_mac/
+dist_linux/
+build/drive_organizer/
+DriveOrganizer_*.zip
+DriveOrganizer_*.tar.gz
+DriveOrganizer_*.dmg
+DriveOrganizer_*.AppImage
+AppDir/
+
+# Logs e runtime
 logs/
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
-.venv/
-venv/
-dist/
-dist_windows/
-build/drive_organizer/
 *.egg-info/
 .pytest_cache/
-dist_windows/
+
+# Ambienti virtuali
+.venv/
+venv/
