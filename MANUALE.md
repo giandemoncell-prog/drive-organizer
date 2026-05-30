@@ -2,6 +2,11 @@
 
 **Drive Organizer** è un'app che riorganizza automaticamente Google Drive creando una struttura di cartelle leggibile e logica, usando intelligenza artificiale locale e cloud per classificare i file.
 
+> **Manuali specifici per sistema operativo:**
+> - [Manuale Windows](docs/MANUALE_WINDOWS.md) — EXE standalone, PowerShell, Inno Setup installer
+> - [Manuale macOS](docs/MANUALE_MACOS.md) — binario precompilato, Gatekeeper, Homebrew
+> - [Manuale Linux / Chrome OS](docs/MANUALE_LINUX.md) — install.sh, PATH, Crostini, alias
+
 ---
 
 ## Indice

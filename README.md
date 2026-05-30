@@ -19,6 +19,17 @@ Uno strumento CLI Python che analizza i tuoi 16.000+ file, propone una struttura
 
 ---
 
+## Documentazione
+
+| Sistema operativo | Manuale |
+|---|---|
+| Windows 10/11 | [docs/MANUALE_WINDOWS.md](docs/MANUALE_WINDOWS.md) |
+| macOS 12+ | [docs/MANUALE_MACOS.md](docs/MANUALE_MACOS.md) |
+| Linux / Chrome OS | [docs/MANUALE_LINUX.md](docs/MANUALE_LINUX.md) |
+| Riferimento generale | [MANUALE.md](MANUALE.md) |
+
+---
+
 ## Quick Start
 
 ```bash
