@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drive Organizer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+a{color:#4a9eff}
+
+/* Header */
+header{background:#1a1d27;border-bottom:1px solid #2d3148;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:16px;font-weight:600;display:flex;align-items:center;gap:10px}
+.logo span{font-size:20px}
+.status-pill{display:flex;align-items:center;gap:8px;font-size:13px;color:#64748b}
+.dot{width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0}
+.dot.green{background:#22c55e}
+.email{color:#e2e8f0;font-weight:500}
+.storage{color:#64748b;font-size:12px}
+
+/* Tabs */
+nav{background:#1a1d27;border-bottom:1px solid #2d3148;padding:0 24px;display:flex;gap:4px}
+.tab{padding:14px 20px;font-size:14px;cursor:pointer;color:#64748b;border-bottom:2px solid transparent;transition:all .15s}
+.tab:hover{color:#e2e8f0}
+.tab.active{color:#4a9eff;border-bottom-color:#4a9eff}
+
+/* Main */
+main{padding:24px;max-width:1100px;margin:0 auto}
+
+/* Cards */
+.card{background:#1a1d27;border:1px solid #2d3148;border-radius:12px;padding:20px;margin-bottom:16px}
+.card-title{font-size:13px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px}
+
+/* AI status grid */
+.ai-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.ai-item{background:#0f1117;border:1px solid #2d3148;border-radius:8px;padding:12px}
+.ai-item .label{font-size:11px;color:#64748b;margin-bottom:4px}
+.ai-item .value{font-size:13px;font-weight:500}
+.ai-item .value.ok{color:#22c55e}
+.ai-item .value.no{color:#ef4444}
+.ai-item .value.warn{color:#f59e0b}
+
+/* Storage bar */
+.storage-bar-wrap{margin-top:8px}
+.storage-bar{height:6px;background:#2d3148;border-radius:3px;overflow:hidden;margin-bottom:6px}
+.storage-bar-fill{height:100%;background:#4a9eff;border-radius:3px;transition:width .5s}
+.storage-text{font-size:12px;color:#64748b}
+
+/* Strategy selector */
+.strategies{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.strat-card{background:#0f1117;border:2px solid #2d3148;border-radius:10px;padding:14px;cursor:pointer;transition:all .15s}
+.strat-card:hover{border-color:#4a9eff44}
+.strat-card.selected{border-color:#4a9eff;background:#4a9eff0d}
+.strat-card input{display:none}
+.strat-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.strat-desc{font-size:12px;color:#64748b}
+.strat-badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;margin-top:6px}
+.badge-noai{background:#22c55e22;color:#22c55e}
+.badge-ai{background:#f59e0b22;color:#f59e0b}
+
+/* Options row */
+.options-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px}
+.opt-group{display:flex;flex-direction:column;gap:6px}
+.opt-group label{font-size:12px;color:#64748b}
+.opt-group textarea{background:#0f1117;border:1px solid #2d3148;border-radius:8px;color:#e2e8f0;font-size:13px;padding:10px;resize:vertical;min-height:80px;width:360px;font-family:inherit}
+.opt-group textarea:focus{outline:none;border-color:#4a9eff}
+.checkbox-row{display:flex;align-items:center;gap:8px;padding-top:4px}
+.checkbox-row input{accent-color:#4a9eff;width:16px;height:16px;cursor:pointer}
+.checkbox-row span{font-size:13px;cursor:pointer}
+
+/* Buttons */
+.btn-row{display:flex;gap:10px;margin-bottom:16px}
+.btn{padding:9px 20px;border-radius:8px;border:none;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:#4a9eff;color:#fff}
+.btn-primary:hover:not(:disabled){background:#3a8aef}
+.btn-success{background:#22c55e;color:#fff}
+.btn-success:hover:not(:disabled){background:#16a34a}
+.btn-danger{background:#ef4444;color:#fff}
+.btn-danger:hover:not(:disabled){background:#dc2626}
+.btn-ghost{background:#2d3148;color:#e2e8f0}
+.btn-ghost:hover:not(:disabled){background:#3a3f5c}
+
+/* Progress */
+.progress-wrap{margin-bottom:12px;display:none}
+.progress-bar{height:4px;background:#2d3148;border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:#4a9eff;width:0;border-radius:2px;transition:width .3s}
+.progress-text{font-size:12px;color:#64748b;margin-top:6px}
+
+/* Preview table */
+.preview-wrap{margin-bottom:16px;display:none}
+.preview-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.preview-count{font-size:13px;color:#64748b}
+.table-scroll{max-height:380px;overflow-y:auto;border-radius:8px;border:1px solid #2d3148}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#1a1d27;padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em;position:sticky;top:0}
+td{padding:9px 14px;border-top:1px solid #2d3148;vertical-align:middle}
+tr:hover td{background:#4a9eff08}
+.conf{display:inline-block;font-size:11px;padding:2px 7px;border-radius:4px;font-weight:600}
+.conf-high{background:#22c55e22;color:#22c55e}
+.conf-mid{background:#f59e0b22;color:#f59e0b}
+.conf-low{background:#ef444422;color:#ef4444}
+.provider-badge{font-size:10px;color:#64748b;background:#2d3148;padding:2px 6px;border-radius:4px}
+
+/* Duplicate groups */
+.dup-groups{max-height:380px;overflow-y:auto}
+.dup-group{background:#0f1117;border:1px solid #2d3148;border-radius:8px;padding:12px;margin-bottom:8px}
+.dup-group-header{font-size:12px;color:#f59e0b;margin-bottom:8px;font-weight:600}
+.dup-file{font-size:12px;color:#64748b;padding:3px 0;display:flex;justify-content:space-between}
+.dup-file span{color:#e2e8f0}
+
+/* Rollback table */
+.rb-table{width:100%;border-collapse:collapse;font-size:13px}
+.rb-table th{background:#0f1117;padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase}
+.rb-table td{padding:10px 14px;border-top:1px solid #2d3148;vertical-align:middle}
+.rb-table tr:hover td{background:#4a9eff08}
+.rb-empty{text-align:center;padding:40px;color:#64748b;font-size:14px}
+
+/* Log panel */
+.log-panel{background:#0a0c12;border:1px solid #2d3148;border-radius:8px;padding:12px;font-family:'SF Mono','Fira Code',monospace;font-size:12px;line-height:1.7;max-height:220px;overflow-y:auto;display:none}
+.log-panel.visible{display:block}
+.log-info{color:#94a3b8}
+.log-ok{color:#22c55e}
+.log-error{color:#ef4444}
+.log-progress{color:#4a9eff}
+.log-warn{color:#f59e0b}
+
+/* Misc */
+.hidden{display:none!important}
+.section{display:none}
+.section.active{display:block}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span>🗂</span> Drive Organizer</div>
+  <div class="status-pill">
+    <div class="dot" id="statusDot"></div>
+    <span class="email" id="statusEmail">Caricamento…</span>
+    <span class="storage" id="statusStorage"></span>
+  </div>
+</header>
+
+<nav>
+  <div class="tab active" onclick="switchTab('organizza')">Organizza</div>
+  <div class="tab" onclick="switchTab('duplicati')">Duplicati</div>
+  <div class="tab" onclick="switchTab('rollback')">Rollback</div>
+</nav>
+
+<main>
+
+  <!-- ── ORGANIZZA ───────────────────────────────────────────────── -->
+  <section class="section active" id="tab-organizza">
+    <div class="card">
+      <div class="card-title">Strategia</div>
+      <div class="strategies">
+        <label class="strat-card selected" id="strat-type">
+          <input type="radio" name="strategy" value="type" checked>
+          <div class="strat-name">📁 Per tipo</div>
+          <div class="strat-desc">Documenti, Foto, Video, Audio, Archivi…</div>
+          <span class="strat-badge badge-noai">Senza AI</span>
+        </label>
+        <label class="strat-card" id="strat-date">
+          <input type="radio" name="strategy" value="date">
+          <div class="strat-name">📅 Per data</div>
+          <div class="strat-desc">Organizza per Anno/Mese di modifica</div>
+          <span class="strat-badge badge-noai">Senza AI</span>
+        </label>
+        <label class="strat-card" id="strat-project">
+          <input type="radio" name="strategy" value="project">
+          <div class="strat-name">🧠 Per progetto</div>
+          <div class="strat-desc">Raggruppa per argomento con AI</div>
+          <span class="strat-badge badge-ai">Richiede AI</span>
+        </label>
+        <label class="strat-card" id="strat-custom">
+          <input type="radio" name="strategy" value="custom">
+          <div class="strat-name">✏️ Personalizzata</div>
+          <div class="strat-desc">Descrivi tu la struttura desiderata</div>
+          <span class="strat-badge badge-ai">Richiede AI</span>
+        </label>
+      </div>
+
+      <div class="options-row">
+        <div id="opt-yearonly" class="opt-group hidden">
+          <div class="checkbox-row">
+            <input type="checkbox" id="yearOnly">
+            <span onclick="document.getElementById('yearOnly').click()">Solo anno (senza mese)</span>
+          </div>
+        </div>
+        <div id="opt-custom" class="opt-group hidden">
+          <label>Descrivi la struttura desiderata</label>
+          <textarea id="customPrompt" placeholder="Es: Dividi per cliente: Acme, Beta, Gamma"></textarea>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btnPreview" onclick="startOrganize(false)">
+          👁 Anteprima
+        </button>
+        <button class="btn btn-success" id="btnApply" onclick="startOrganize(true)" disabled>
+          ✅ Applica
+        </button>
+      </div>
+    </div>
+
+    <div class="card" id="previewCard" style="display:none">
+      <div class="preview-wrap" id="orgPreview" style="display:block">
+        <div class="preview-header">
+          <div class="card-title" style="margin:0">Piano di organizzazione</div>
+          <span class="preview-count" id="previewCount"></span>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>File</th><th>Destinazione</th><th>AI</th><th>Conf.</th></tr></thead>
+            <tbody id="previewBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Log</div>
+      <div class="progress-wrap" id="orgProgress">
+        <div class="progress-bar"><div class="progress-fill" id="orgProgressFill"></div></div>
+        <div class="progress-text" id="orgProgressText"></div>
+      </div>
+      <div class="log-panel visible" id="orgLog"></div>
+    </div>
+  </section>
+
+  <!-- ── DUPLICATI ──────────────────────────────────────────────── -->
+  <section class="section" id="tab-duplicati">
+    <div class="card">
+      <div class="card-title">Gestione duplicati</div>
+      <p style="font-size:13px;color:#64748b;margin-bottom:16px">
+        Trova file con lo stesso contenuto o nome e archivia i duplicati in <code style="color:#4a9eff">99_Archivio/Duplicati</code>.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btnDupScan" onclick="startDuplicates(false)">
+          🔍 Cerca duplicati
+        </button>
+        <button class="btn btn-danger" id="btnDupApply" onclick="startDuplicates(true)" disabled>
+          🗑 Archivia duplicati
+        </button>
+      </div>
+    </div>
+
+    <div class="card" id="dupPreviewCard" style="display:none">
+      <div class="card-title">Duplicati trovati — <span id="dupTotalGroups"></span> gruppi</div>
+      <div class="dup-groups" id="dupGroups"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Log</div>
+      <div class="log-panel visible" id="dupLog"></div>
+    </div>
+  </section>
+
+  <!-- ── ROLLBACK ───────────────────────────────────────────────── -->
+  <section class="section" id="tab-rollback">
+    <div class="card">
+      <div class="card-title">Sessioni precedenti</div>
+      <div id="rbList">
+        <div class="rb-empty">Caricamento…</div>
+      </div>
+    </div>
+    <div class="card" id="rbLogCard" style="display:none">
+      <div class="card-title">Log rollback</div>
+      <div class="log-panel visible" id="rbLog"></div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+// ── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const names=['organizza','duplicati','rollback'];
+    t.classList.toggle('active', names[i]===name);
+  });
+  document.querySelectorAll('.section').forEach(s=>{
+    s.classList.toggle('active', s.id==='tab-'+name);
+  });
+  if(name==='rollback') loadRollbacks();
+}
+
+// ── Status ───────────────────────────────────────────────────────────────────
+async function loadStatus(){
+  try{
+    const r=await fetch('/api/status');
+    const d=await r.json();
+    const dot=document.getElementById('statusDot');
+    const email=document.getElementById('statusEmail');
+    const storage=document.getElementById('statusStorage');
+    if(d.connected){
+      dot.classList.add('green');
+      email.textContent=d.email;
+      if(d.storage.limit_gb>0)
+        storage.textContent=`${d.storage.used_gb} / ${d.storage.limit_gb} GB`;
+      else
+        storage.textContent=`${d.storage.used_gb} GB`;
+    }else{
+      dot.classList.remove('green');
+      email.textContent=d.error||'Non connesso';
+    }
+  }catch(e){
+    document.getElementById('statusEmail').textContent='Errore connessione';
+  }
+}
+
+// ── SSE stream ───────────────────────────────────────────────────────────────
+function startStream(opId, logEl, onDone, onPreview, progressEl, progressFill, progressText){
+  logEl.innerHTML='';
+  const es=new EventSource('/api/stream/'+opId);
+  es.onmessage=e=>{
+    const msg=JSON.parse(e.data);
+    if(msg.type==='ping') return;
+    if(msg.type==='progress'&&progressEl){
+      progressEl.style.display='block';
+      const pct=msg.total>0?Math.round(msg.current/msg.total*100):0;
+      progressFill.style.width=pct+'%';
+      progressText.textContent=msg.message;
+    } else if(msg.type==='preview'){
+      if(onPreview) onPreview(msg);
+    } else {
+      const cls={info:'log-info',ok:'log-ok',error:'log-error',warn:'log-warn'}[msg.type]||'log-info';
+      const prefix={info:'›',ok:'✓',error:'✗',warn:'⚠'}[msg.type]||'›';
+      logEl.innerHTML+=`<div class="${cls}">${prefix} ${escHtml(msg.message)}</div>`;
+      logEl.scrollTop=logEl.scrollHeight;
+    }
+    if(msg.done){
+      es.close();
+      if(progressEl) progressEl.style.display='none';
+      if(onDone) onDone(msg);
+    }
+  };
+  es.onerror=()=>{
+    logEl.innerHTML+='<div class="log-error">✗ Connessione interrotta</div>';
+    es.close();
+    if(onDone) onDone({type:'error'});
+  };
+}
+
+function escHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Organize ─────────────────────────────────────────────────────────────────
+document.querySelectorAll('input[name="strategy"]').forEach(r=>{
+  r.addEventListener('change',()=>{
+    document.querySelectorAll('.strat-card').forEach(c=>c.classList.remove('selected'));
+    r.closest('.strat-card').classList.add('selected');
+    const v=r.value;
+    document.getElementById('opt-yearonly').classList.toggle('hidden', v!=='date');
+    document.getElementById('opt-custom').classList.toggle('hidden', v!=='custom');
+  });
+});
+
+async function startOrganize(apply){
+  const strategy=document.querySelector('input[name="strategy"]:checked').value;
+  const yearOnly=document.getElementById('yearOnly').checked;
+  const customPrompt=document.getElementById('customPrompt').value;
+  const logEl=document.getElementById('orgLog');
+  const progressEl=document.getElementById('orgProgress');
+  const progressFill=document.getElementById('orgProgressFill');
+  const progressText=document.getElementById('orgProgressText');
+  const btnPreview=document.getElementById('btnPreview');
+  const btnApply=document.getElementById('btnApply');
+
+  btnPreview.disabled=true;
+  btnApply.disabled=true;
+  document.getElementById('previewCard').style.display='none';
+
+  const r=await fetch('/api/organize',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({strategy,apply,year_only:yearOnly,custom_prompt:customPrompt})
+  });
+  const {op_id}=await r.json();
+
+  startStream(op_id, logEl,
+    (msg)=>{
+      btnPreview.disabled=false;
+      if(msg.type!=='error') btnApply.disabled=false;
+    },
+    (preview)=>{
+      renderPreview(preview);
+      if(!apply) btnApply.disabled=false;
+    },
+    progressEl, progressFill, progressText
+  );
+}
+
+function renderPreview(data){
+  const card=document.getElementById('previewCard');
+  const body=document.getElementById('previewBody');
+  const count=document.getElementById('previewCount');
+  card.style.display='block';
+  count.textContent=`${data.total} file`;
+  body.innerHTML=data.moves.map(m=>{
+    const c=m.confidence;
+    const cls=c>=0.8?'conf-high':c>=0.6?'conf-mid':'conf-low';
+    return `<tr>
+      <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(m.file_name)}</td>
+      <td style="color:#94a3b8">${escHtml(m.target_path)}</td>
+      <td><span class="provider-badge">${escHtml(m.provider)}</span></td>
+      <td><span class="conf ${cls}">${Math.round(c*100)}%</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Duplicates ────────────────────────────────────────────────────────────────
+async function startDuplicates(apply){
+  const logEl=document.getElementById('dupLog');
+  const btnScan=document.getElementById('btnDupScan');
+  const btnApply=document.getElementById('btnDupApply');
+  btnScan.disabled=true;
+  btnApply.disabled=true;
+  document.getElementById('dupPreviewCard').style.display='none';
+
+  const r=await fetch('/api/duplicates',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({apply})
+  });
+  const {op_id}=await r.json();
+
+  startStream(op_id, logEl,
+    (msg)=>{
+      btnScan.disabled=false;
+      if(msg.type!=='error') btnApply.disabled=false;
+    },
+    (preview)=>{
+      renderDuplicates(preview);
+      if(!apply) btnApply.disabled=false;
+    }
+  );
+}
+
+function renderDuplicates(data){
+  const card=document.getElementById('dupPreviewCard');
+  const container=document.getElementById('dupGroups');
+  const total=document.getElementById('dupTotalGroups');
+  card.style.display='block';
+  total.textContent=data.total_groups;
+  container.innerHTML=data.groups.map(g=>`
+    <div class="dup-group">
+      <div class="dup-group-header">⚠ ${g.count} copie</div>
+      ${g.files.map(f=>`
+        <div class="dup-file">
+          <span>${escHtml(f.name)}</span>
+          <span style="color:#64748b">${f.size?Math.round(f.size/1024)+' KB':''}</span>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+// ── Rollback ──────────────────────────────────────────────────────────────────
+async function loadRollbacks(){
+  const el=document.getElementById('rbList');
+  el.innerHTML='<div class="rb-empty">Caricamento…</div>';
+  try{
+    const r=await fetch('/api/rollbacks');
+    const data=await r.json();
+    if(!data.length){
+      el.innerHTML='<div class="rb-empty">Nessuna sessione disponibile</div>';
+      return;
+    }
+    el.innerHTML=`<div class="table-scroll"><table class="rb-table">
+      <thead><tr><th>ID</th><th>Data</th><th>File</th><th>Account</th><th></th></tr></thead>
+      <tbody>
+        ${data.map(m=>`<tr>
+          <td><code style="color:#4a9eff">${m.short}</code></td>
+          <td>${m.date}</td>
+          <td>${m.entries}</td>
+          <td style="color:#64748b">${m.email}</td>
+          <td><button class="btn btn-ghost" style="padding:6px 14px;font-size:12px"
+              onclick="doRollback('${m.run_id}')">↩ Ripristina</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+  }catch(e){
+    el.innerHTML='<div class="rb-empty">Errore caricamento</div>';
+  }
+}
+
+async function doRollback(runId){
+  if(!confirm('Ripristinare questa sessione?')) return;
+  const logCard=document.getElementById('rbLogCard');
+  const logEl=document.getElementById('rbLog');
+  logCard.style.display='block';
+
+  const r=await fetch('/api/rollback',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({run_id:runId})
+  });
+  const {op_id}=await r.json();
+  startStream(op_id, logEl, ()=>loadRollbacks());
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+loadStatus();
+setInterval(loadStatus, 30000);
+</script>
+</body>
+</html>

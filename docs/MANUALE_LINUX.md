@@ -170,8 +170,8 @@ Il file `credentials.json` va scaricato dal browser ChromeOS (non Linux). Poi:
 
 ```bash
 # Il browser ChromeOS scarica in ~/Scaricati
-# Crostini può accedere a questa cartella in /mnt/chromeos/MyFiles/Downloads/
-cp /mnt/chromeos/MyFiles/Downloads/credentials.json ~/DriveOrganizer/
+# Crostini può accedere a questa cartella in /mnt/chromeos/shared/MyFiles/Downloads/
+cp /mnt/chromeos/shared/MyFiles/Downloads/credentials.json ~/DriveOrganizer/
 ```
 
 ### 4.4 Browser per OAuth su ChromeOS

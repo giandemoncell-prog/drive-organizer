@@ -9,9 +9,103 @@ on:
         default: "1.0.0"
 
 jobs:
-  build:
+  # ── Pacchetto leggero (source) per Chrome OS / Chromebook ──────────────────
+  package-chromebook:
     runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
+      - name: Build source tarball (Chromebook)
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          DIST="dist_chromebook"
+          mkdir -p "$DIST"
+
+          # Sorgenti essenziali
+          cp -r drive_organizer  "$DIST/"
+          cp    main.py          "$DIST/"
+          cp    requirements.txt "$DIST/"
+          cp    .env.example     "$DIST/"
+          cp    taxonomy_custom.json "$DIST/" 2>/dev/null || true
+          cp    MANUALE.md       "$DIST/" 2>/dev/null || true
+
+          # install.sh — usa Python3 di sistema (già presente su Crostini/Debian)
+          cat > "$DIST/install.sh" << 'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+INSTALL_DIR="$HOME/.local/bin"
+APP_DIR="$HOME/.config/drive-organizer"
+
+echo "=== Drive Organizer — installazione Chromebook/Linux ==="
+
+# Dipendenze di sistema
+sudo apt-get update -qq
+sudo apt-get install -y python3 python3-pip python3-venv ca-certificates
+
+# Venv + dipendenze Python
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 -m venv "$SCRIPT_DIR/.venv"
+"$SCRIPT_DIR/.venv/bin/pip" install --upgrade pip -q
+"$SCRIPT_DIR/.venv/bin/pip" install -r "$SCRIPT_DIR/requirements.txt" -q
+
+# File di configurazione
+mkdir -p "$APP_DIR"
+cp "$SCRIPT_DIR/taxonomy_custom.json" "$APP_DIR/" 2>/dev/null || true
+[ ! -f "$SCRIPT_DIR/.env" ] && cp "$SCRIPT_DIR/.env.example" "$SCRIPT_DIR/.env"
+
+# Wrapper globale
+mkdir -p "$INSTALL_DIR"
+WRAPPER="$INSTALL_DIR/drive-organizer"
+cat > "$WRAPPER" << WRAPPER_EOF
+#!/usr/bin/env bash
+source "$SCRIPT_DIR/.venv/bin/activate"
+python "$SCRIPT_DIR/main.py" "\$@"
+WRAPPER_EOF
+chmod +x "$WRAPPER"
+
+# PATH
+for RC in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+    if [ -f "$RC" ] && ! grep -q '.local/bin' "$RC"; then
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC"
+    fi
+done
+
+echo ""
+echo "=== Installazione completata! ==="
+echo ""
+echo "Prossimi passi:"
+echo "1. Copia credentials.json in $SCRIPT_DIR/"
+echo "   Su ChromeOS: cp /mnt/chromeos/MyFiles/Downloads/credentials.json $SCRIPT_DIR/"
+echo "2. Riapri il terminale (o: source ~/.bashrc)"
+echo "3. drive-organizer setup && drive-organizer auth"
+EOF
+          chmod +x "$DIST/install.sh"
+
+          # uninstall.sh
+          cat > "$DIST/uninstall.sh" << 'EOF'
+#!/usr/bin/env bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+rm -f "$HOME/.local/bin/drive-organizer"
+rm -rf "$SCRIPT_DIR/.venv"
+rm -rf "$HOME/.config/drive-organizer"
+echo "Drive Organizer rimosso."
+EOF
+          chmod +x "$DIST/uninstall.sh"
+
+          # Archivio
+          tar -czf "DriveOrganizer_v${VERSION}_Chromebook.tar.gz" -C "$DIST" .
+          ls -lh "DriveOrganizer_v${VERSION}_Chromebook.tar.gz"
+
+      - name: Upload Chromebook artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chromebook-tarball
+          path: "DriveOrganizer_v${{ github.event.inputs.version }}_Chromebook.tar.gz"
+
+  # ── Binario PyInstaller per Linux generico (senza Python) ──────────────────
+  build-linux-binary:
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,76 +130,64 @@ jobs:
       - name: Build with PyInstaller
         run: python -m PyInstaller drive_organizer.spec --clean --noconfirm
 
-      - name: Verify binary
-        run: |
-          ls -lh dist/drive-organizer
-          file dist/drive-organizer
-
       - name: Prepare distribution package
         run: |
           VERSION="${{ github.event.inputs.version }}"
           DIST="dist_linux"
           mkdir -p "$DIST"
 
-          cp dist/drive-organizer "$DIST/"
-          cp MANUALE.md           "$DIST/" 2>/dev/null || true
-          cp taxonomy_custom.json "$DIST/" 2>/dev/null || true
-          cp .env.example         "$DIST/"
+          cp dist/drive-organizer  "$DIST/"
+          cp MANUALE.md            "$DIST/" 2>/dev/null || true
+          cp taxonomy_custom.json  "$DIST/" 2>/dev/null || true
+          cp .env.example          "$DIST/"
           chmod +x "$DIST/drive-organizer"
 
-          # install.sh
           cat > "$DIST/install.sh" << 'EOF'
-          #!/bin/bash
-          set -euo pipefail
-          INSTALL_DIR="$HOME/.local/bin"
-          APP_DIR="$HOME/.config/drive-organizer"
-          mkdir -p "$INSTALL_DIR" "$APP_DIR"
-          cp drive-organizer "$INSTALL_DIR/"
-          chmod +x "$INSTALL_DIR/drive-organizer"
-          cp taxonomy_custom.json "$APP_DIR/" 2>/dev/null || true
-          cp .env.example "$APP_DIR/.env.example" 2>/dev/null || true
-          for RC in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
-              if [ -f "$RC" ] && ! grep -q '$HOME/.local/bin' "$RC"; then
-                  echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC"
-              fi
-          done
-          echo "Installazione completata! Riapri il terminale e digita: drive-organizer setup"
-          EOF
+#!/usr/bin/env bash
+set -euo pipefail
+INSTALL_DIR="$HOME/.local/bin"
+mkdir -p "$INSTALL_DIR"
+cp drive-organizer "$INSTALL_DIR/"
+chmod +x "$INSTALL_DIR/drive-organizer"
+cp taxonomy_custom.json "$HOME/.config/drive-organizer/" 2>/dev/null || true
+for RC in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+    if [ -f "$RC" ] && ! grep -q '.local/bin' "$RC"; then
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC"
+    fi
+done
+echo "Fatto! Riapri il terminale: drive-organizer setup"
+EOF
           chmod +x "$DIST/install.sh"
 
-          # uninstall.sh
           cat > "$DIST/uninstall.sh" << 'EOF'
-          #!/bin/bash
-          rm -f "$HOME/.local/bin/drive-organizer"
-          rm -rf "$HOME/.config/drive-organizer"
-          echo "Drive Organizer rimosso."
-          EOF
+#!/usr/bin/env bash
+rm -f "$HOME/.local/bin/drive-organizer"
+rm -rf "$HOME/.config/drive-organizer"
+echo "Drive Organizer rimosso."
+EOF
           chmod +x "$DIST/uninstall.sh"
 
-          # LEGGIMI
-          cat > "$DIST/LEGGIMI.txt" << EOF2
-          Drive Organizer v${VERSION} — Guida rapida Linux / Chrome OS
-
-          INSTALLAZIONE:
-            chmod +x install.sh && ./install.sh
-            Poi riapri il terminale: drive-organizer setup
-
-          CHROME OS (Crostini):
-            Impostazioni -> Sviluppatori -> Ambiente Linux -> Attiva
-            Poi segui le istruzioni sopra.
-
-          COMANDI:
-            drive-organizer setup
-            drive-organizer auth
-            drive-organizer status
-            drive-organizer organize -s type --apply
-            drive-organizer rollback
-          EOF2
-
-          # Archivio
           tar -czf "DriveOrganizer_v${VERSION}_Linux.tar.gz" -C "$DIST" .
-          echo "Archivio: DriveOrganizer_v${VERSION}_Linux.tar.gz"
           ls -lh "DriveOrganizer_v${VERSION}_Linux.tar.gz"
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binary
+          path: "DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz"
+
+  # ── Pubblica Release GitHub con entrambi gli artifact ─────────────────────
+  release:
+    needs: [package-chromebook, build-linux-binary]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -lh *.tar.gz
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -117,31 +199,45 @@ jobs:
 
             ### Download
 
-            | Piattaforma | File |
-            |---|---|
-            | Windows (installer) | `DriveOrganizer_Setup_v${{ github.event.inputs.version }}.exe` |
-            | Linux / Chrome OS | `DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz` |
+            | Piattaforma | File | Dimensione |
+            |---|---|---|
+            | Windows (installer) | `DriveOrganizer_Setup_v${{ github.event.inputs.version }}.exe` | ~60 MB |
+            | Linux (binario standalone) | `DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz` | ~60 MB |
+            | **Chrome OS / Chromebook** | **`DriveOrganizer_v${{ github.event.inputs.version }}_Chromebook.tar.gz`** | **~500 KB** |
 
-            ### Installazione Linux / Chrome OS (Crostini)
+            ### Chromebook (consigliato per Chrome OS)
+
+            > Pacchetto leggero (~500 KB): usa Python3 già presente in Crostini.
 
             ```bash
-            wget https://github.com/giandemoncell-prog/drive-organizer/releases/latest/download/DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz
-            mkdir ~/DriveOrganizer && tar -xzf DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz -C ~/DriveOrganizer/
-            cd ~/DriveOrganizer && chmod +x install.sh && ./install.sh
+            # Dal Terminale Linux di Chrome OS:
+            wget https://github.com/giandemoncell-prog/drive-organizer/releases/latest/download/DriveOrganizer_v${{ github.event.inputs.version }}_Chromebook.tar.gz
+            mkdir ~/DriveOrganizer
+            tar -xzf DriveOrganizer_v${{ github.event.inputs.version }}_Chromebook.tar.gz -C ~/DriveOrganizer/
+            cd ~/DriveOrganizer && bash install.sh
             ```
 
-            ### Su Chrome OS — copia credentials.json
-
+            Poi copia `credentials.json`:
             ```bash
             cp /mnt/chromeos/MyFiles/Downloads/credentials.json ~/DriveOrganizer/
             drive-organizer setup
             drive-organizer auth
             ```
 
-            ### Changelog
+            ### Linux generico (senza Python installato)
 
+            ```bash
+            wget https://github.com/giandemoncell-prog/drive-organizer/releases/latest/download/DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz
+            mkdir ~/DriveOrganizer
+            tar -xzf DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz -C ~/DriveOrganizer/
+            cd ~/DriveOrganizer && bash install.sh
+            ```
+
+            ### Changelog
             - Release iniziale v${{ github.event.inputs.version }}
-          files: "DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz"
+          files: |
+            DriveOrganizer_v${{ github.event.inputs.version }}_Chromebook.tar.gz
+            DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz
           draft: false
           prerelease: false
         env:

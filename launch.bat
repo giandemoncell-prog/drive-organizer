@@ -1,3 +1,6 @@
 @echo off
-cd /d D:\DRIVE_ORGANIZER
-powershell -NoExit -Command "& python main.py %*"
+cd /d "%~dp0"
+if exist ".venv\Scripts\python.exe" (
+    call .venv\Scripts\activate.bat
+)
+python main.py %*

@@ -35,15 +35,14 @@ if not exist "%ROOT%\credentials.json" (
 :: Installa dipendenze
 echo.
 echo [1/4] Installazione dipendenze Python...
-python -m pip install pyinstaller --quiet --upgrade
-if errorlevel 1 (
-    echo [ERRORE] pip install pyinstaller fallito.
-    pause
-    exit /b 1
+if exist "%ROOT%\pyproject.toml" (
+    python -m pip install -e "%ROOT%[dev]" --quiet
+) else (
+    python -m pip install pyinstaller --quiet --upgrade
+    python -m pip install -r "%ROOT%\requirements.txt" --quiet
 )
-python -m pip install -r "%ROOT%\requirements.txt" --quiet
 if errorlevel 1 (
-    echo [ERRORE] pip install requirements.txt fallito.
+    echo [ERRORE] Installazione dipendenze fallita.
     pause
     exit /b 1
 )

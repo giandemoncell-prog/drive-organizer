@@ -545,5 +545,18 @@ def _build_strategy(name: str, custom_prompt: str | None, no_haiku: bool, taxono
     raise ValueError(f"Strategia sconosciuta: {name}")
 
 
+@cli.command()
+@click.option("--port", default=5001, show_default=True, help="Porta del server web")
+def web(port):
+    """Avvia la web UI locale nel browser."""
+    import threading
+    import webbrowser
+    from web import app
+    url = f"http://localhost:{port}"
+    console.print(f"[bold]Drive Organizer Web UI[/bold] → [link={url}]{url}[/link]")
+    threading.Timer(1.2, lambda: webbrowser.open(url)).start()
+    app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
+
+
 if __name__ == "__main__":
     cli()
