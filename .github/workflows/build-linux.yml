@@ -1,0 +1,148 @@
+name: Build Linux & Publish Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (e.g. 1.0.0)"
+        required: true
+        default: "1.0.0"
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y libssl-dev zlib1g-dev
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+
+      - name: Create dummy credentials.json (build only)
+        run: echo '{"installed":{"client_id":"x","client_secret":"x","redirect_uris":["urn:ietf:wg:oauth:2.0:oob"]}}' > credentials.json
+
+      - name: Build with PyInstaller
+        run: python -m PyInstaller drive_organizer.spec --clean --noconfirm
+
+      - name: Verify binary
+        run: |
+          ls -lh dist/drive-organizer
+          file dist/drive-organizer
+
+      - name: Prepare distribution package
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          DIST="dist_linux"
+          mkdir -p "$DIST"
+
+          cp dist/drive-organizer "$DIST/"
+          cp MANUALE.md           "$DIST/" 2>/dev/null || true
+          cp taxonomy_custom.json "$DIST/" 2>/dev/null || true
+          cp .env.example         "$DIST/"
+          chmod +x "$DIST/drive-organizer"
+
+          # install.sh
+          cat > "$DIST/install.sh" << 'EOF'
+          #!/bin/bash
+          set -euo pipefail
+          INSTALL_DIR="$HOME/.local/bin"
+          APP_DIR="$HOME/.config/drive-organizer"
+          mkdir -p "$INSTALL_DIR" "$APP_DIR"
+          cp drive-organizer "$INSTALL_DIR/"
+          chmod +x "$INSTALL_DIR/drive-organizer"
+          cp taxonomy_custom.json "$APP_DIR/" 2>/dev/null || true
+          cp .env.example "$APP_DIR/.env.example" 2>/dev/null || true
+          for RC in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+              if [ -f "$RC" ] && ! grep -q '$HOME/.local/bin' "$RC"; then
+                  echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC"
+              fi
+          done
+          echo "Installazione completata! Riapri il terminale e digita: drive-organizer setup"
+          EOF
+          chmod +x "$DIST/install.sh"
+
+          # uninstall.sh
+          cat > "$DIST/uninstall.sh" << 'EOF'
+          #!/bin/bash
+          rm -f "$HOME/.local/bin/drive-organizer"
+          rm -rf "$HOME/.config/drive-organizer"
+          echo "Drive Organizer rimosso."
+          EOF
+          chmod +x "$DIST/uninstall.sh"
+
+          # LEGGIMI
+          cat > "$DIST/LEGGIMI.txt" << EOF2
+          Drive Organizer v${VERSION} — Guida rapida Linux / Chrome OS
+
+          INSTALLAZIONE:
+            chmod +x install.sh && ./install.sh
+            Poi riapri il terminale: drive-organizer setup
+
+          CHROME OS (Crostini):
+            Impostazioni -> Sviluppatori -> Ambiente Linux -> Attiva
+            Poi segui le istruzioni sopra.
+
+          COMANDI:
+            drive-organizer setup
+            drive-organizer auth
+            drive-organizer status
+            drive-organizer organize -s type --apply
+            drive-organizer rollback
+          EOF2
+
+          # Archivio
+          tar -czf "DriveOrganizer_v${VERSION}_Linux.tar.gz" -C "$DIST" .
+          echo "Archivio: DriveOrganizer_v${VERSION}_Linux.tar.gz"
+          ls -lh "DriveOrganizer_v${VERSION}_Linux.tar.gz"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ github.event.inputs.version }}"
+          name: "Drive Organizer v${{ github.event.inputs.version }}"
+          body: |
+            ## Drive Organizer v${{ github.event.inputs.version }}
+
+            ### Download
+
+            | Piattaforma | File |
+            |---|---|
+            | Windows (installer) | `DriveOrganizer_Setup_v${{ github.event.inputs.version }}.exe` |
+            | Linux / Chrome OS | `DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz` |
+
+            ### Installazione Linux / Chrome OS (Crostini)
+
+            ```bash
+            wget https://github.com/giandemoncell-prog/drive-organizer/releases/latest/download/DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz
+            mkdir ~/DriveOrganizer && tar -xzf DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz -C ~/DriveOrganizer/
+            cd ~/DriveOrganizer && chmod +x install.sh && ./install.sh
+            ```
+
+            ### Su Chrome OS — copia credentials.json
+
+            ```bash
+            cp /mnt/chromeos/MyFiles/Downloads/credentials.json ~/DriveOrganizer/
+            drive-organizer setup
+            drive-organizer auth
+            ```
+
+            ### Changelog
+
+            - Release iniziale v${{ github.event.inputs.version }}
+          files: "DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
