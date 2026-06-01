@@ -11,13 +11,16 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   # ── Pacchetto leggero (source) per Chrome OS / Chromebook ──────────────────
   package-chromebook:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Build source tarball (Chromebook)
         run: |
@@ -40,7 +43,7 @@ jobs:
           ls -lh "DriveOrganizer_v${VERSION}_Chromebook.tar.gz"
 
       - name: Upload Chromebook artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: chromebook-tarball
           path: "DriveOrganizer_v${{ github.event.inputs.version }}_Chromebook.tar.gz"
@@ -50,7 +53,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -94,7 +97,7 @@ jobs:
           ls -lh "DriveOrganizer_v${VERSION}_Linux.tar.gz"
 
       - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: linux-binary
           path: "DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz"
@@ -105,7 +108,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           merge-multiple: true
 
