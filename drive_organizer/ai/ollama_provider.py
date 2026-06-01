@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 
 from drive_organizer.ai.base import ClassificationRequest, ClassificationResult
 from drive_organizer.config import settings
+
+_PARALLEL_WORKERS = 2
 
 _RESPONSE_SCHEMA = {
     "type": "object",
@@ -63,9 +66,10 @@ class OllamaProvider:
             f"modified={req.modified_time.date()}\n"
             f"Strategy hint: {strategy_hint}"
         )
-        payload = {
+        payload: dict = {
             "model": self._model,
             "stream": False,
+            "keep_alive": "10m",
             "options": {"temperature": 0.0},
             "format": _RESPONSE_SCHEMA,
             "messages": [
@@ -73,6 +77,10 @@ class OllamaProvider:
                 {"role": "user", "content": user_msg},
             ],
         }
+        # think=false must be top-level (Ollama 0.6.4+), not inside options
+        if "qwen3" in self._model:
+            payload["think"] = False
+
         resp = requests.post(f"{self._base_url}/api/chat", json=payload, timeout=60)
         resp.raise_for_status()
         raw = resp.json()["message"]["content"]
@@ -95,20 +103,27 @@ class OllamaProvider:
         strategy_hint: str,
         allowed_folders: list[str] | None = None,
     ) -> list[ClassificationResult]:
-        results = []
-        for req in requests_list:
+        id_to_result: dict[str, ClassificationResult] = {}
+
+        def _safe_classify(req: ClassificationRequest) -> ClassificationResult:
             try:
-                result = self._classify_one(req, strategy_hint, allowed_folders)
+                return self._classify_one(req, strategy_hint, allowed_folders)
             except Exception as e:
-                result = ClassificationResult(
+                return ClassificationResult(
                     file_id=req.file_id,
                     target_path="Altro",
                     confidence=0.0,
                     reasoning=f"Ollama error: {e}",
                     provider="ollama",
                 )
-            results.append(result)
-        return results
+
+        with ThreadPoolExecutor(max_workers=_PARALLEL_WORKERS) as pool:
+            futures = {pool.submit(_safe_classify, req): req for req in requests_list}
+            for future in as_completed(futures):
+                result = future.result()
+                id_to_result[result.file_id] = result
+
+        return [id_to_result[r.file_id] for r in requests_list]
 
     def classify_with_content(
         self,

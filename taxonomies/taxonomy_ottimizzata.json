@@ -1,0 +1,63 @@
+{
+  "_description": "Struttura ottimizzata 9 cartelle — personale + BachataVibes + sviluppo + scuola",
+  "_reasoning": "v2: fix regex word boundary (underscore non più trattato come separatore di parola), aggiunte keyword mancanti per i 444 file che finivano in 99_Archivio.",
+  "folders": [
+    "00_Workflow_Backup",
+    "01_BachataVibes",
+    "02_Sviluppo_e_Software",
+    "03_Automazioni_Social",
+    "04_Documenti_Personali",
+    "05_Casa_e_Immobili",
+    "06_Scuola_e_Didattica",
+    "07_Viaggi_e_Hobby",
+    "99_Archivio"
+  ],
+  "rules": [
+    {
+      "match": "Workflow Backups OR workflow backup OR n8n OR backup_workflow OR flows OR credentials_backup OR n8n_backup OR workflow_export OR execution OR webhook OR N8N_WORKFLOW_TEMPLATE OR I_Miei_Workflow",
+      "target": "00_Workflow_Backup",
+      "description": "Backup automatici n8n e workflow"
+    },
+    {
+      "match": "bachata OR vibes OR bvm_ OR bachata_vibes OR salsa OR merengue OR mambo OR rumba OR remix OR brano OR canzone OR jingle OR mp3 OR mp4 OR cover art OR artwork OR thumbnail OR copertina OR traccia OR beat OR strumentale OR suno OR musica OR audio OR short OR reel OR storia OR video clip OR live stream OR megamix OR playlist OR Fuego OR bachatavibes OR post_0 OR reel_0 OR storia_0",
+      "target": "01_BachataVibes",
+      "description": "Tutto il progetto Bachata Vibes: audio, video, immagini, analytics"
+    },
+    {
+      "match": ".py OR .sh OR .bat OR .ps1 OR .ts OR .js OR .yaml OR .yml OR .toml OR requirements OR pyproject OR venv OR script OR deploy OR install OR setup OR chromebook OR raspberry OR pi_ OR linux OR docker OR server OR playwright OR selenium OR automazione OR anonimizzatore OR drive_organizer OR drive-organizer OR generatore OR .spec OR installer OR utility OR tool OR istruzioni OR readme OR wol OR wake-on-lan OR bios OR remoto OR manuale_linux OR MANUALE_LINUX OR MANUALE_CHROMEOS OR .desktop OR .env.example OR comandi",
+      "target": "02_Sviluppo_e_Software",
+      "description": "Codice sorgente, script, tool, installer, ambienti di sviluppo, manuali tecnici"
+    },
+    {
+      "match": "tiktok OR fb_ OR ig_ OR instagram OR facebook OR youtube OR social OR publisher OR upload OR schedule OR post_pronti OR caption OR reel_publish OR analytics_snapshot OR retention OR baseline OR insights OR engagement OR optimizer OR scrape OR cron OR autopilot OR token_meta OR api_social OR Creazione_Video_per_Social",
+      "target": "03_Automazioni_Social",
+      "description": "Automazioni pubblicazione social, analytics, scheduler"
+    },
+    {
+      "match": "passaporto OR carta identità OR codice fiscale OR tessera sanitaria OR stato di famiglia OR anagrafe OR curriculum vitae OR NIE OR permesso soggiorno OR patente OR firma digitale OR SPID OR referto OR ricetta OR visita medica OR analisi OR vaccino OR farmaco OR ospedale OR busta paga OR stipendio OR contratto lavoro OR TFR OR INPS OR dichiarazione redditi OR 730 OR bollo auto OR revisione OR assicurazione auto OR libretto OR sinistro OR scontrino OR garanzia OR denuncia OR querela OR furto identità OR furto di identità OR truffa OR bbva OR carta verde OR Justificante OR formulario OR Guerda OR personal_it OR fee_information OR deposit_insurance OR modello 790 OR attestato di rischio OR rischio2026 OR ts Demontis OR Demontis Gianluca 2031 OR Messaggi0 OR messaggi truffa OR accesso al conto OR Lista chiamate OR postacert OR Sintesi della situazione",
+      "target": "04_Documenti_Personali",
+      "description": "Identità, salute, lavoro, veicoli, acquisti, pratiche personali"
+    },
+    {
+      "match": "immobili OR immobile OR appartamento OR affitto OR condominio OR catasto OR rogito OR planimetria OR visura OR locazione OR inquilino OR canone OR bolletta OR enel OR A2A OR tiscali OR luce OR gas OR acqua OR utenza OR manutenzione OR caldaia OR balcone OR via bolzano OR sarroch OR quartucciu OR spettu OR asta OR liquidazione OR licitazione OR IMU OR accertamento IMU OR Controdeduzioni_IMU OR abbanoa OR contatore OR porta blindata OR portoncino OR ristrutturazione OR detrazioni fiscali OR detrazioni_fiscali OR impianto elettrico OR bonifico OR postagiro OR ordinanza OR perizia OR avviso di vendita OR offerta OR offertaintegrale OR fattura OR saldo OR Spese Via OR Via Nazionale OR Via_Nazionale OR Affitti_Via OR Sant'Antioco OR arredi OR imprese edili OR facciate OR lavori di OR preventivi energia OR Dichiarazione Di Rispondenza OR f24 OR Ricevuta_Bonifico OR Bonifico OR Pagamenti OR contratto parte OR Rilievi Porte OR delibera OR segnatura OR daticert OR ricevuta pagamento OR ricevuta.pdf OR preventivo OR Riscontro alla OR prot. n. OR Riscontro_rich",
+      "target": "05_Casa_e_Immobili",
+      "description": "Documenti casa, immobili, bollette, utenze, ristrutturazione, aste"
+    },
+    {
+      "match": "scuola OR docente OR alunno OR studente OR classe OR didattica OR lezione OR verifica OR interrogazione OR programmazione OR UDA OR PEI OR PDP OR DSA OR BES OR dislessia OR discalculia OR disgrafia OR inclusione OR sostegno OR mappa concettuale OR materiale didattico OR esercizi OR esercizio OR scienze OR matematica OR storia OR arte OR PTOF OR RAV OR circolare OR verbale OR collegio docenti OR libro IA OR KDP OR manoscritto OR DSA_libro OR generatore materiali OR capitolo OR bozza OR intelligenza artificiale scuola OR learning design OR IDEA 2019 OR bandi scuole OR titoli di precedenza OR part-time OR domanda part OR USP Cagliari OR antologia OR mesopotamia OR preistoria OR nulla osta OR educatrice OR sindacale OR anno scolastico OR a.s.20 OR a.s. 20 OR EX15 OR Dati Widline OR orario scolastico OR inglese esercizio OR modulo di ritiro OR Come compilare OR circ. n.",
+      "target": "06_Scuola_e_Didattica",
+      "description": "Materiali didattici, documentazione scolastica, libro IA, DSA/BES, pratiche docente"
+    },
+    {
+      "match": "viaggio OR vacanza OR canarie OR lanzarote OR tenerife OR gran canaria OR hotel OR prenotazione OR booking OR volo OR itinerario OR escursione OR hobby OR sport OR fotografia OR lettura OR romanzo OR gioco OR bici OR palestra OR cucina OR giardinaggio OR film OR serie OR associazione OR Biglietti Andata OR Biglietti Ritorno OR E-ticket OR passenger OR UraHotels OR HODEIA OR Foto Aereo OR aereo OR voli OR Ottimizzazione Voli OR Ricerca Voli OR Anno Zero OR AnnoZero OR Cronache del Dopo OR CronacheDelDopo OR AnnoZeroLibro OR fantasy OR low-cost OR Cagliari-Gran OR progetto estero OR lead_magnet OR Depósito OR Reserva",
+      "target": "07_Viaggi_e_Hobby",
+      "description": "Viaggi, vacanze, hobby, interessi personali, romanzo"
+    },
+    {
+      "match": "archivio OR vecchio OR backup OR obsoleto OR tmp OR temp OR old OR bak OR copia OR duplicato OR .log OR .eml OR part001",
+      "target": "99_Archivio",
+      "description": "File vecchi, backup, obsoleti"
+    }
+  ],
+  "fallback_folder": "99_Archivio"
+}

@@ -1,0 +1,63 @@
+{
+  "_description": "Struttura personale — documenti di vita quotidiana, famiglia, salute, casa, finanze.",
+  "folders": [
+    "01_Documenti_Personali",
+    "02_Salute_e_Benessere",
+    "03_Finanze_e_Banca",
+    "04_Casa_e_Abitazione",
+    "05_Lavoro_e_Carriera",
+    "06_Famiglia",
+    "07_Viaggi_e_Vacanze",
+    "08_Hobby_e_Interessi",
+    "09_Veicoli",
+    "10_Acquisti_e_Garanzie",
+    "99_Archivio"
+  ],
+  "rules": [
+    {
+      "match": "passaporto OR carta identità OR codice fiscale OR tessera sanitaria OR stato di famiglia OR certificato nascita OR anagrafe OR certificato residenza OR estratto atto OR firma digitale OR spid OR identity",
+      "target": "01_Documenti_Personali"
+    },
+    {
+      "match": "referto OR ricetta OR visita medica OR diagnosi OR analisi sangue OR esame OR radiografia OR ecografia OR tac OR risonanza OR vaccino OR farmaco OR ospedale OR clinica OR dottore OR medico OR specialista OR cartella clinica OR impegnativa OR ASL",
+      "target": "02_Salute_e_Benessere"
+    },
+    {
+      "match": "estratto conto OR bonifico OR banca OR bancomat OR carta credito OR mutuo OR prestito OR finanziamento OR rata OR bolletta OR fattura OR ricevuta pagamento OR f24 OR IMU OR TARI OR tassa OR730 OR dichiarazione redditi OR IRPEF OR spesa OR pagamento OR saldo OR estratto OR conto corrente",
+      "target": "03_Finanze_e_Banca"
+    },
+    {
+      "match": "casa OR appartamento OR affitto OR condominio OR catasto OR rogito OR planimetria OR visura OR abitazione OR proprietà OR locazione OR inquilino OR canone OR utenza OR luce OR gas OR acqua OR internet OR tiscali OR enel OR A2A OR manutenzione OR impianto OR caldaia OR muratura",
+      "target": "04_Casa_e_Abitazione"
+    },
+    {
+      "match": "busta paga OR stipendio OR contratto di lavoro OR TFR OR liquidazione OR 730 redditi OR INPS OR pensione OR contributi OR part-time OR sindacale OR CCNL OR nota spese OR rimborso OR colloquio OR assunzione OR formazione professionale OR attestato OR certificazione lavoro",
+      "target": "05_Lavoro_e_Carriera"
+    },
+    {
+      "match": "famiglia OR figlio OR figlia OR bambino OR neonato OR marito OR moglie OR genitore OR padre OR madre OR nonno OR nonna OR compleanno OR onomastico OR ricorrenza OR cerimonia OR matrimonio OR battesimo OR comunione OR foto famiglia OR ricordo OR albero genealogico",
+      "target": "06_Famiglia"
+    },
+    {
+      "match": "viaggio OR vacanza OR hotel OR prenotazione OR booking OR volo OR aereo OR treno OR biglietto OR itinerario OR mappa OR tour OR escursione OR crociera OR soggiorno OR albergo OR b&b OR airbnb OR check-in OR passaporto viaggio OR vistos OR destinazione",
+      "target": "07_Viaggi_e_Vacanze"
+    },
+    {
+      "match": "hobby OR sport OR palestra OR musica OR fotografia OR cucina OR giardinaggio OR lettura OR libro OR film OR serie OR gioco OR bici OR corsa OR nuoto OR calcio OR tennis OR arte OR pittura OR disegno OR corso OR associazione OR club",
+      "target": "08_Hobby_e_Interessi"
+    },
+    {
+      "match": "auto OR moto OR veicolo OR bollo OR revisione OR RC auto OR assicurazione auto OR patente OR libretto OR collaudo OR carrozzeria OR officina OR meccanico OR pneumatici OR multa OR ZTL OR targhe OR ztl OR incidente OR sinistro",
+      "target": "09_Veicoli"
+    },
+    {
+      "match": "garanzia OR scontrino OR ricevuta acquisto OR fattura acquisto OR manuale OR istruzioni OR elettrodomestico OR telefono OR pc OR laptop OR tablet OR televisore OR frigorifero OR lavatrice OR prodotto OR ordine OR reso OR rimborso acquisto",
+      "target": "10_Acquisti_e_Garanzie"
+    },
+    {
+      "match": "archivio OR vecchio OR backup OR obsoleto OR 2019 OR 2020 OR 2021 OR tmp OR temp OR copia OR old OR bak",
+      "target": "99_Archivio"
+    }
+  ],
+  "fallback_folder": "99_Archivio"
+}

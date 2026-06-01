@@ -1,0 +1,58 @@
+{
+  "_description": "Struttura scolastica per insegnante — materiali didattici, classi, documentazione, DSA/BES, progetti.",
+  "folders": [
+    "Scuola_01_Programmazioni",
+    "Scuola_02_Materiali_Didattici",
+    "Scuola_03_Verifiche_e_Valutazioni",
+    "Scuola_04_Classi_e_Registro",
+    "Scuola_05_DSA_BES_Inclusione",
+    "Scuola_06_Documenti_Amministrativi",
+    "Scuola_07_Presentazioni_e_Proiezioni",
+    "Scuola_08_Ricerca_e_Aggiornamento",
+    "Scuola_09_Progetti_Interdisciplinari",
+    "Scuola_99_Archivio_Scolastico"
+  ],
+  "rules": [
+    {
+      "match": "programmazione OR piano di lavoro OR unità di apprendimento OR UDA OR obiettivi formativi OR competenze chiave OR indicazioni nazionali OR curricolo OR progettazione didattica OR sequenza didattica OR prerequisiti OR traguardi competenza OR syllabus",
+      "target": "Scuola_01_Programmazioni"
+    },
+    {
+      "match": "scheda didattica OR esercizio OR esercizi OR attività OR fotocopie OR dispensa OR appunti lezione OR spiegazione OR lavoro classe OR materiale lezione OR compito classe OR worksheet OR lezione OR scienze OR matematica OR italiano OR storia OR geografia OR inglese OR arte OR musica OR educazione fisica OR laboratorio OR esperimento",
+      "target": "Scuola_02_Materiali_Didattici"
+    },
+    {
+      "match": "verifica OR interrogazione OR compito scritto OR test OR quiz OR valutazione OR voto OR griglia valutazione OR rubrica OR correzione OR soluzione OR risposte OR esame OR compito in classe OR compito casa OR recupero OR potenziamento OR prova orale OR prova scritta",
+      "target": "Scuola_03_Verifiche_e_Valutazioni"
+    },
+    {
+      "match": "registro OR classe OR alunno OR alunni OR studente OR studenti OR gruppo classe OR elenco studenti OR orario OR tabella OR presenze OR annotazione OR comunicazione genitori OR colloquio OR scrutinio OR pagella OR valutazione finale OR anno scolastico OR 1A OR 2B OR 3C",
+      "target": "Scuola_04_Classi_e_Registro"
+    },
+    {
+      "match": "DSA OR dislessia OR discalculia OR disgrafia OR disprassia OR BES OR PEI OR PDP OR piano didattico personalizzato OR inclusione OR sostegno OR strumento compensativo OR misura dispensativa OR mappa concettuale OR sintesi vocale OR calcolatrice OR tempi aggiuntivi OR certificazione DSA OR legge 170 OR diagnosi scolastica",
+      "target": "Scuola_05_DSA_BES_Inclusione"
+    },
+    {
+      "match": "circolare OR bando OR avviso OR delibera OR verbale OR collegio docenti OR consiglio classe OR commissione OR POF OR PTOF OR RAV OR piano miglioramento OR organigramma OR regolamento OR privacy scuola OR GDPR scuola OR documento valutazione OR fascicolo OR modulo iscrizione OR comunicazione istituzionale",
+      "target": "Scuola_06_Documenti_Amministrativi"
+    },
+    {
+      "match": "presentazione OR powerpoint OR ppt OR slides OR proiezione OR LIM OR lavagna interattiva OR video lezione OR screencast OR google slides OR canva scuola OR infografica OR poster OR murales didattico OR flip chart",
+      "target": "Scuola_07_Presentazioni_e_Proiezioni"
+    },
+    {
+      "match": "aggiornamento professionale OR formazione docente OR corso OR webinar OR MOOC OR convegno OR seminario OR ricerca didattica OR innovazione scolastica OR metodologia OR flipped classroom OR cooperative learning OR pensiero computazionale OR STEM OR didattica digitale OR intelligenza artificiale scuola OR AI scuola",
+      "target": "Scuola_08_Ricerca_e_Aggiornamento"
+    },
+    {
+      "match": "progetto OR interdisciplinare OR collaborazione OR uscita didattica OR gita scolastica OR teatro OR recita OR mostra OR concorso OR olimpiade OR torneo OR giornalino OR radio scolastica OR orto scuola OR CLIL OR erasmus OR gemellaggio OR open day",
+      "target": "Scuola_09_Progetti_Interdisciplinari"
+    },
+    {
+      "match": "archivio scolastico OR vecchio anno OR anno precedente OR backup scuola OR documenti vecchi OR obsoleto scuola",
+      "target": "Scuola_99_Archivio_Scolastico"
+    }
+  ],
+  "fallback_folder": "Scuola_02_Materiali_Didattici"
+}

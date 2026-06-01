@@ -41,9 +41,19 @@ def _build_cascade():
     from drive_organizer.ai.ollama_provider import OllamaProvider
     from drive_organizer.config import settings
 
-    if settings.gemini_api_key and not settings.anthropic_api_key:
+    if settings.anthropic_api_key:
+        from drive_organizer.ai.haiku_provider import HaikuProvider
+        from drive_organizer.ai.opus_provider import OpusProvider
+        haiku, opus = HaikuProvider(), OpusProvider()
+    elif settings.gemini_api_key:
         from drive_organizer.ai.gemini_provider import GeminiFlashProvider, GeminiProProvider
         haiku, opus = GeminiFlashProvider(), GeminiProProvider()
+    elif settings.deepseek_api_key:
+        from drive_organizer.ai.deepseek_provider import DeepSeekFlashProvider, DeepSeekProProvider
+        haiku, opus = DeepSeekFlashProvider(), DeepSeekProProvider()
+    elif settings.dashscope_api_key:
+        from drive_organizer.ai.qwen_provider import QwenFlashProvider, QwenProProvider
+        haiku, opus = QwenFlashProvider(), QwenProProvider()
     else:
         from drive_organizer.ai.haiku_provider import HaikuProvider
         from drive_organizer.ai.opus_provider import OpusProvider
@@ -332,9 +342,336 @@ def api_rollback():
     return jsonify({"op_id": op_id})
 
 
+_structure_cache: dict | None = None
+
+
+@app.route("/api/structure/current")
+def api_structure_current():
+    global _structure_cache
+    if _structure_cache:
+        return jsonify(_structure_cache)
+
+    try:
+        from drive_organizer.auth.google_auth import get_drive_service
+        from pathlib import Path as _Path
+        from collections import defaultdict, Counter
+
+        svc = get_drive_service()
+
+        # Load all folders with parents
+        folders: dict[str, dict] = {}
+        page_token = None
+        while True:
+            resp = svc.files().list(
+                q="mimeType='application/vnd.google-apps.folder' and trashed=false",
+                fields="nextPageToken,files(id,name,parents)",
+                pageSize=1000, supportsAllDrives=True, includeItemsFromAllDrives=True,
+                pageToken=page_token,
+            ).execute()
+            for f in resp.get("files", []):
+                folders[f["id"]] = {"name": f["name"], "parents": f.get("parents", [])}
+            page_token = resp.get("nextPageToken")
+            if not page_token:
+                break
+
+        def get_top2(fid: str, depth: int = 0) -> tuple[str, str]:
+            if depth > 15 or fid not in folders:
+                return "(root)", ""
+            f = folders[fid]
+            if not f["parents"]:
+                return f["name"], ""
+            p = folders.get(f["parents"][0])
+            if not p or not p["parents"]:
+                return f["name"], ""
+            gp = folders.get(p["parents"][0])
+            if not gp or not gp["parents"]:
+                return p["name"], f["name"]
+            return get_top2(f["parents"][0], depth + 1)
+
+        # Load files
+        files = []
+        page_token = None
+        while True:
+            resp = svc.files().list(
+                q="mimeType!='application/vnd.google-apps.folder' and trashed=false",
+                fields="nextPageToken,files(id,parents,fileExtension,size)",
+                pageSize=1000, supportsAllDrives=True, includeItemsFromAllDrives=True,
+                pageToken=page_token,
+            ).execute()
+            files.extend(resp.get("files", []))
+            page_token = resp.get("nextPageToken")
+            if not page_token:
+                break
+
+        top_count: Counter = Counter()
+        sub_count: dict[str, Counter] = defaultdict(Counter)
+        type_by_top: dict[str, Counter] = defaultdict(Counter)
+
+        for f in files:
+            parents = f.get("parents", [])
+            pid = parents[0] if parents else None
+            top, sub = get_top2(pid) if pid else ("(root)", "")
+            top_count[top] += 1
+            if sub:
+                sub_count[top][sub] += 1
+            ext = (f.get("fileExtension") or "?").lower()
+            type_by_top[top][ext] += 1
+
+        tree = []
+        for folder, count in sorted(top_count.items(), key=lambda x: -x[1]):
+            top_types = [{"ext": t, "count": n}
+                         for t, n in sorted(type_by_top[folder].items(), key=lambda x: -x[1])[:4]]
+            children = [{"name": s, "count": sc}
+                        for s, sc in sorted(sub_count[folder].items(), key=lambda x: -x[1])[:8]]
+            tree.append({"name": folder, "count": count, "types": top_types, "children": children})
+
+        result = {"total_files": len(files), "total_folders": len(folders), "tree": tree}
+        _structure_cache = result
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/analyze", methods=["POST"])
+def api_analyze():
+    """Scan Drive, sample file names, ask AI to propose a personalized taxonomy."""
+    data = request.json or {}
+    save_as = data.get("save_as", "").strip()
+    account = data.get("account") or None
+    op_id, q = _new_op()
+
+    def run():
+        try:
+            from collections import Counter, defaultdict
+            from drive_organizer.ai.analyzer import analyze_and_propose
+            from drive_organizer.auth.google_auth import get_drive_service
+            from drive_organizer.drive.client import DriveClient
+
+            q.put({"type": "info", "message": "Connessione Google Drive..."})
+            svc = get_drive_service(account)
+            client = DriveClient(svc)
+
+            q.put({"type": "info", "message": "Scansione file (solo metadati)..."})
+            files, _ = client.scan_all_files()
+            q.put({"type": "ok", "message": f"{len(files)} file trovati."})
+
+            # Build top-folder list from cached structure or quick scan
+            q.put({"type": "info", "message": "Analisi struttura esistente..."})
+            folders: dict[str, dict] = {}
+            page_token = None
+            while True:
+                resp = svc.files().list(
+                    q="mimeType='application/vnd.google-apps.folder' and trashed=false",
+                    fields="nextPageToken,files(id,name,parents)",
+                    pageSize=1000, supportsAllDrives=True, includeItemsFromAllDrives=True,
+                    pageToken=page_token,
+                ).execute()
+                for f in resp.get("files", []):
+                    folders[f["id"]] = {"name": f["name"], "parents": f.get("parents", [])}
+                page_token = resp.get("nextPageToken")
+                if not page_token:
+                    break
+
+            # Get top-level folder names
+            top_folders = [
+                info["name"] for fid, info in folders.items()
+                if not info["parents"] or info["parents"][0] not in folders
+            ]
+
+            q.put({"type": "info",
+                   "message": f"Invio {min(400, len(files))} nomi file all'AI per analisi..."})
+
+            taxonomy = analyze_and_propose(files, sorted(set(top_folders)))
+
+            # Save taxonomy file if requested
+            saved_path = None
+            if save_as:
+                import re as _re
+                safe = _re.sub(r"[^\w\-]", "_", save_as).strip("_") or "custom"
+                save_path = Path(__file__).parent / "taxonomies" / f"taxonomy_{safe}.json"
+                save_path.parent.mkdir(exist_ok=True)
+                save_path.write_text(
+                    __import__("json").dumps(taxonomy, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                saved_path = str(save_path.relative_to(Path(__file__).parent))
+
+            q.put({
+                "type": "taxonomy",
+                "taxonomy": taxonomy,
+                "saved_path": saved_path,
+                "message": f"Taxonomy generata: {len(taxonomy.get('folders', []))} cartelle.",
+                "done": True,
+            })
+
+        except Exception as e:
+            q.put({"type": "error", "message": str(e), "done": True})
+
+    threading.Thread(target=run, daemon=True).start()
+    return jsonify({"op_id": op_id})
+
+
+@app.route("/api/taxonomy/save", methods=["POST"])
+def api_taxonomy_save():
+    """Save a taxonomy dict to a named file."""
+    data = request.json or {}
+    name = data.get("name", "custom").strip()
+    taxonomy = data.get("taxonomy", {})
+    import re as _re
+    safe = _re.sub(r"[^\w\-]", "_", name).strip("_") or "custom"
+    save_path = Path(__file__).parent / "taxonomies" / f"taxonomy_{safe}.json"
+    save_path.parent.mkdir(exist_ok=True)
+    save_path.write_text(
+        __import__("json").dumps(taxonomy, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return jsonify({"ok": True, "path": f"taxonomies/taxonomy_{safe}.json"})
+
+
+@app.route("/api/structure/cache/clear", methods=["POST"])
+def api_structure_cache_clear():
+    global _structure_cache
+    _structure_cache = None
+    return jsonify({"ok": True})
+
+
+@app.route("/api/structure/proposed", methods=["POST"])
+def api_structure_proposed():
+    data = request.json or {}
+    strategy = data.get("strategy", "type")
+    op_id, q = _new_op()
+
+    def run():
+        try:
+            from collections import defaultdict, Counter as _Counter
+            from drive_organizer.auth.google_auth import get_authenticated_email, get_drive_service
+            from drive_organizer.drive.client import DriveClient
+            from drive_organizer.planner import OrganizationPlanner
+
+            q.put({"type": "info", "message": "Connessione Drive..."})
+            svc = get_drive_service()
+            email = get_authenticated_email(svc)
+            client = DriveClient(svc)
+
+            q.put({"type": "info", "message": "Scansione file..."})
+            files, _ = client.scan_all_files()
+            q.put({"type": "info", "message": f"{len(files)} file trovati. Classificazione..."})
+
+            if strategy == "type":
+                from drive_organizer.strategies.by_type import FileTypeStrategy
+                strat = FileTypeStrategy()
+            elif strategy == "date":
+                from drive_organizer.strategies.by_date import DateStrategy
+                strat = DateStrategy()
+            else:
+                from drive_organizer.strategies.by_type import FileTypeStrategy
+                strat = FileTypeStrategy()
+
+            cascade = _build_cascade() if strat.requires_ai() else None
+            planner = OrganizationPlanner(cascade=cascade)
+            plan = planner.build_plan(files, strat, None, 0)
+
+            top_count: _Counter = _Counter()
+            sub_count: dict = defaultdict(_Counter)
+            for op in plan.moves:
+                if op.skipped:
+                    continue
+                parts = [p for p in op.target_path.replace("\\", "/").split("/") if p]
+                top = parts[0] if parts else "Altro"
+                sub = parts[1] if len(parts) > 1 else ""
+                top_count[top] += 1
+                if sub:
+                    sub_count[top][sub] += 1
+
+            tree = []
+            for folder, count in sorted(top_count.items(), key=lambda x: -x[1]):
+                children = [{"name": s, "count": sc}
+                            for s, sc in sorted(sub_count[folder].items(), key=lambda x: -x[1])[:8]]
+                tree.append({"name": folder, "count": count, "children": children})
+
+            q.put({"type": "tree", "tree": tree, "total": len(plan.moves),
+                   "message": f"Struttura proposta pronta: {len(tree)} cartelle top-level.",
+                   "done": True})
+        except Exception as e:
+            q.put({"type": "error", "message": str(e), "done": True})
+
+    threading.Thread(target=run, daemon=True).start()
+    return jsonify({"op_id": op_id})
+
+
+@app.route("/api/config")
+def api_config_get():
+    from drive_organizer.config import settings
+
+    def mask(v):
+        return (v[:8] + "…") if len(v) > 8 else ("(vuota)" if not v else v)
+
+    # Determine active provider
+    if settings.anthropic_api_key:
+        active = "Anthropic"
+    elif settings.gemini_api_key:
+        active = "Gemini"
+    elif settings.deepseek_api_key:
+        active = "DeepSeek"
+    elif settings.dashscope_api_key:
+        active = "Qwen (DashScope)"
+    else:
+        active = "Solo Ollama"
+
+    return jsonify({
+        "anthropic_key": mask(settings.anthropic_api_key),
+        "anthropic_set": bool(settings.anthropic_api_key),
+        "gemini_key": mask(settings.gemini_api_key),
+        "gemini_set": bool(settings.gemini_api_key),
+        "deepseek_key": mask(settings.deepseek_api_key),
+        "deepseek_set": bool(settings.deepseek_api_key),
+        "dashscope_key": mask(settings.dashscope_api_key),
+        "dashscope_set": bool(settings.dashscope_api_key),
+        "ollama_url": settings.ollama_base_url,
+        "ollama_model": settings.ollama_model,
+        "active_provider": active,
+    })
+
+
+@app.route("/api/config", methods=["POST"])
+def api_config_save():
+    data = request.json or {}
+    env_path = Path(__file__).parent / ".env"
+    lines = env_path.read_text(encoding="utf-8").splitlines() if env_path.exists() else []
+
+    updates: dict[str, str] = {}
+    if data.get("anthropic_key") and not str(data["anthropic_key"]).endswith("…"):
+        updates["ANTHROPIC_API_KEY"] = data["anthropic_key"]
+    if data.get("gemini_key") and not str(data["gemini_key"]).endswith("…"):
+        updates["GEMINI_API_KEY"] = data["gemini_key"]
+    if data.get("deepseek_key") and not str(data["deepseek_key"]).endswith("…"):
+        updates["DEEPSEEK_API_KEY"] = data["deepseek_key"]
+    if data.get("dashscope_key") and not str(data["dashscope_key"]).endswith("…"):
+        updates["DASHSCOPE_API_KEY"] = data["dashscope_key"]
+    if data.get("ollama_url"):
+        updates["OLLAMA_BASE_URL"] = data["ollama_url"]
+    if data.get("ollama_model"):
+        updates["OLLAMA_MODEL"] = data["ollama_model"]
+
+    new_lines, updated = [], set()
+    for line in lines:
+        key = line.split("=")[0].strip()
+        if key in updates:
+            new_lines.append(f"{key}={updates[key]}")
+            updated.add(key)
+        else:
+            new_lines.append(line)
+    for key, val in updates.items():
+        if key not in updated:
+            new_lines.append(f"{key}={val}")
+
+    env_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+    return jsonify({"ok": True})
+
+
 if __name__ == "__main__":
     import webbrowser
     port = 5001
-    print(f"\nDrive Organizer Web UI → http://localhost:{port}\n")
+    print(f"\nDrive Organizer Web UI -> http://localhost:{port}\n")
     threading.Timer(1.2, lambda: webbrowser.open(f"http://localhost:{port}")).start()
     app.run(host="0.0.0.0", port=port, debug=False, threaded=True)

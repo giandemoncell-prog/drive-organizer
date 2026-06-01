@@ -1,0 +1,88 @@
+{
+  "_description": "Struttura combinata personale + scolastico (docente) — tutto in un unico Drive organizzato.",
+  "folders": [
+    "01_Documenti_Personali",
+    "02_Salute",
+    "03_Finanze",
+    "04_Casa",
+    "05_Lavoro_Generale",
+    "06_Famiglia_e_Viaggi",
+    "07_Hobby_e_Interessi",
+    "08_Veicoli",
+    "Scuola_Materiali",
+    "Scuola_Programmazioni",
+    "Scuola_Verifiche",
+    "Scuola_DSA_Inclusione",
+    "Scuola_Classi_e_Registro",
+    "Scuola_Documenti_Ufficiali",
+    "Scuola_Formazione",
+    "99_Archivio"
+  ],
+  "rules": [
+    {
+      "match": "passaporto OR carta identità OR codice fiscale OR tessera sanitaria OR stato di famiglia OR certificato nascita OR anagrafe OR firma digitale OR SPID",
+      "target": "01_Documenti_Personali"
+    },
+    {
+      "match": "referto OR ricetta OR visita medica OR diagnosi OR analisi OR radiografia OR ecografia OR vaccino OR farmaco OR ospedale OR medico OR ASL OR impegnativa OR cartella clinica",
+      "target": "02_Salute"
+    },
+    {
+      "match": "estratto conto OR banca OR bolletta OR fattura OR pagamento OR f24 OR IMU OR TARI OR730 OR dichiarazione redditi OR mutuo OR rata OR prestito OR spesa OR carta credito OR bonifico",
+      "target": "03_Finanze"
+    },
+    {
+      "match": "casa OR appartamento OR affitto OR condominio OR catasto OR rogito OR utenza OR luce OR gas OR acqua OR internet OR manutenzione OR caldaia OR impianto OR planimetria OR visura",
+      "target": "04_Casa"
+    },
+    {
+      "match": "busta paga OR stipendio OR contratto lavoro OR TFR OR INPS OR contributi OR part-time OR CCNL OR curriculum vitae OR colloquio OR assunzione",
+      "target": "05_Lavoro_Generale"
+    },
+    {
+      "match": "famiglia OR figlio OR genitore OR matrimonio OR compleanno OR cerimonia OR viaggio OR vacanza OR hotel OR prenotazione OR volo OR biglietto OR itinerario OR booking",
+      "target": "06_Famiglia_e_Viaggi"
+    },
+    {
+      "match": "hobby OR sport OR musica OR fotografia OR cucina OR lettura OR libro personale OR film OR gioco OR bici OR palestra OR arte personale OR corso privato",
+      "target": "07_Hobby_e_Interessi"
+    },
+    {
+      "match": "auto OR moto OR bollo OR revisione OR assicurazione auto OR patente OR libretto OR meccanico OR multa OR sinistro",
+      "target": "08_Veicoli"
+    },
+    {
+      "match": "scheda didattica OR esercizio OR attività OR dispensa OR fotocopie OR appunti lezione OR lavoro classe OR worksheet OR materiale lezione OR scienze OR matematica OR italiano OR storia OR geografia OR inglese OR arte OR musica OR educazione fisica OR laboratorio OR esperimento",
+      "target": "Scuola_Materiali"
+    },
+    {
+      "match": "programmazione OR piano di lavoro OR UDA OR unità apprendimento OR obiettivi formativi OR competenze chiave OR curricolo OR progettazione didattica OR traguardi competenza OR indicazioni nazionali",
+      "target": "Scuola_Programmazioni"
+    },
+    {
+      "match": "verifica OR interrogazione OR compito scritto OR test OR quiz OR griglia valutazione OR rubrica OR correzione OR esame OR recupero OR prova orale OR prova scritta OR valutazione",
+      "target": "Scuola_Verifiche"
+    },
+    {
+      "match": "DSA OR dislessia OR discalculia OR disgrafia OR BES OR PEI OR PDP OR piano didattico personalizzato OR inclusione OR sostegno OR strumento compensativo OR mappa concettuale OR legge 170 OR certificazione DSA OR diagnosi scolastica",
+      "target": "Scuola_DSA_Inclusione"
+    },
+    {
+      "match": "registro OR classe OR alunno OR studente OR elenco studenti OR orario OR presenze OR scrutinio OR pagella OR colloquio genitori OR comunicazione genitori OR anno scolastico OR 1A OR 2B OR 3C",
+      "target": "Scuola_Classi_e_Registro"
+    },
+    {
+      "match": "circolare OR bando OR avviso OR delibera OR verbale OR collegio docenti OR consiglio classe OR POF OR PTOF OR RAV OR regolamento OR privacy scuola OR documento valutazione OR fascicolo",
+      "target": "Scuola_Documenti_Ufficiali"
+    },
+    {
+      "match": "aggiornamento OR formazione docente OR corso OR webinar OR convegno OR seminario OR ricerca didattica OR innovazione scolastica OR metodologia OR AI scuola OR intelligenza artificiale didattica OR presentazione lezione OR slides OR powerpoint scuola OR LIM",
+      "target": "Scuola_Formazione"
+    },
+    {
+      "match": "archivio OR vecchio OR backup OR obsoleto OR 2019 OR 2020 OR 2021 OR tmp OR old",
+      "target": "99_Archivio"
+    }
+  ],
+  "fallback_folder": "99_Archivio"
+}

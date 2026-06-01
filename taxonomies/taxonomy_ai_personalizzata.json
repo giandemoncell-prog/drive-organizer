@@ -1,0 +1,70 @@
+{
+  "_description": "Struttura organizzata per un utente che gestisce un progetto musicale (Bachata Vibes), sviluppo software, documenti personali e scolastici, e automazioni social.",
+  "_reasoning": "L'inventario mostra una netta separazione tra contenuti musicali (Bachata Vibes), file di sviluppo (Python, script, env), documenti personali (scuola, immobili, bollette) e file JSON di analytics. La struttura proposta raggruppa per macro-aree funzionali, con cartelle dedicate ai progetti principali e una per l'archivio.",
+  "folders": [
+    "01_BachataVibes_Musica",
+    "02_BachataVibes_Video",
+    "03_BachataVibes_Immagini",
+    "04_Sviluppo_Software",
+    "05_Automazioni_Social",
+    "06_Documenti_Personali",
+    "07_Scuola_Didattica",
+    "08_Immobili_Bollette",
+    "09_Progetti_Hobby",
+    "10_Software_Utility",
+    "99_Archivio"
+  ],
+  "rules": [
+    {
+      "match": "bachata OR salsa OR merengue OR remix OR short OR mp3 OR mp4 OR jingle",
+      "target": "01_BachataVibes_Musica",
+      "description": "File audio e video musicali del progetto Bachata Vibes"
+    },
+    {
+      "match": "short OR mp4 OR video OR bachata OR salsa OR merengue",
+      "target": "02_BachataVibes_Video",
+      "description": "Video brevi e contenuti multimediali per social"
+    },
+    {
+      "match": "jpg OR jpeg OR png OR original OR thumbnail OR immagine OR bvm_",
+      "target": "03_BachataVibes_Immagini",
+      "description": "Immagini, thumbnail e artwork del progetto musicale"
+    },
+    {
+      "match": ".py OR .sh OR .bat OR .env OR .yaml OR .ps1 OR requirements OR token OR pickle OR .template",
+      "target": "04_Sviluppo_Software",
+      "description": "Script Python, file di configurazione e ambienti di sviluppo"
+    },
+    {
+      "match": "tiktok OR fb_ OR ig_ OR social OR routine OR publish OR schedule OR upload OR analytics OR insights OR dashboard OR retention OR baseline OR crontab",
+      "target": "05_Automazioni_Social",
+      "description": "Automazioni per pubblicazione e analisi social media"
+    },
+    {
+      "match": "contratto OR carta verde OR codice fiscale OR permesso OR procura OR bonifico OR fattura OR bolletta OR enel OR contatore OR affitto OR immobile OR via OR quartucciu OR sarroch",
+      "target": "06_Documenti_Personali",
+      "description": "Documenti personali, contratti, bollette e pratiche immobiliari"
+    },
+    {
+      "match": "scuola OR docente OR studente OR dsa OR pei OR didattica OR lezione OR jingle OR kdp OR manoscritto OR libro OR romanzo OR distopico OR cronache",
+      "target": "07_Scuola_Didattica",
+      "description": "Materiale scolastico, didattica, libri e progetti educativi"
+    },
+    {
+      "match": "immobili OR affitto OR bolletta OR enel OR contatore OR via OR quartucciu OR sarroch OR balcone OR infissi OR scala OR porta OR facciata",
+      "target": "08_Immobili_Bollette",
+      "description": "Documentazione immobiliare, bollette e lavori edili"
+    },
+    {
+      "match": "hobby OR viaggio OR canarie OR libro OR ia OR progetto OR estero OR sindacale OR ausili OR sussidi OR comodato",
+      "target": "09_Progetti_Hobby",
+      "description": "Progetti personali, hobby e iniziative extra-lavorative"
+    },
+    {
+      "match": ".zip OR .exe OR .msi OR .ps1 OR .bat OR .sh OR install OR generatore OR anonimizzatore OR chromebook OR windows OR software OR utility OR drive-organizer",
+      "target": "10_Software_Utility",
+      "description": "Software, utility e script di sistema"
+    }
+  ],
+  "fallback_folder": "99_Archivio"
+}

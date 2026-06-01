@@ -1,11 +1,19 @@
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+try:
+    import certifi
+    os.environ.setdefault("REQUESTS_CA_BUNDLE", certifi.where())
+    os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+except ImportError:
+    pass
 
 import click
 from rich.console import Console
@@ -190,10 +198,11 @@ def status(account):
 @click.option("--custom-prompt", "-p", default=None, help="Descrizione struttura (per --strategy custom)")
 @click.option("--taxonomy-file", "-t", default=None, help="JSON con tassonomia pre-costruita (bypassa Opus)")
 @click.option("--apply", is_flag=True, default=False, help="Applica le modifiche (default: solo preview)")
+@click.option("--yes", "-y", is_flag=True, default=False, help="Conferma automaticamente senza prompt interattivo")
 @click.option("--ollama-model", default=None, help="Override modello Ollama")
 @click.option("--no-haiku", is_flag=True, default=False, help="Salta Haiku, va diretto a Opus per l'escalation")
 @click.option("--year-only", is_flag=True, default=False, help="Per --strategy date: solo Anno (senza Mese)")
-def organize(account, strategy, custom_prompt, taxonomy_file, apply, ollama_model, no_haiku, year_only):
+def organize(account, strategy, custom_prompt, taxonomy_file, apply, yes, ollama_model, no_haiku, year_only):
     """Analizza Google Drive e propone (o applica) una riorganizzazione."""
     _check_credentials()
 
@@ -264,7 +273,7 @@ def organize(account, strategy, custom_prompt, taxonomy_file, apply, ollama_mode
         return
 
     from drive_organizer.ui.prompts import confirm_apply
-    if not confirm_apply(console, len(active)):
+    if not confirm_apply(console, len(active), yes=yes):
         console.print("[yellow]Operazione annullata.[/yellow]")
         return
 

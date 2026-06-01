@@ -126,6 +126,33 @@ tr:hover td{background:#4a9eff08}
 .log-progress{color:#4a9eff}
 .log-warn{color:#f59e0b}
 
+/* Structure diff */
+.struct-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.struct-panel{background:#0a0c12;border:1px solid #2d3148;border-radius:10px;padding:16px;min-height:400px;overflow-y:auto;max-height:560px}
+.struct-panel-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #2d3148}
+.struct-panel-title.current{color:#64748b}
+.struct-panel-title.proposed{color:#4a9eff}
+.tree-node{margin-bottom:3px}
+.tree-folder{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;user-select:none;transition:background .1s}
+.tree-folder:hover{background:#ffffff08}
+.tree-folder.new{background:#22c55e0d;border-left:2px solid #22c55e}
+.tree-folder.changed{background:#f59e0b0d;border-left:2px solid #f59e0b}
+.tree-folder.same{border-left:2px solid transparent}
+.tree-icon{font-size:13px;flex-shrink:0}
+.tree-name{font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tree-count{font-size:11px;color:#64748b;background:#2d3148;padding:1px 6px;border-radius:4px;flex-shrink:0}
+.tree-types{font-size:10px;color:#475569;margin-left:28px;margin-bottom:2px}
+.tree-children{margin-left:22px;border-left:1px solid #2d3148;padding-left:8px;margin-top:2px;display:none}
+.tree-children.open{display:block}
+.struct-legend{display:flex;gap:16px;margin-bottom:12px;font-size:11px}
+.legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;margin-top:2px}
+.struct-summary{font-size:12px;color:#64748b;margin-top:8px;padding-top:8px;border-top:1px solid #2d3148}
+
+/* Config inputs */
+.cfg-input{background:#0f1117;border:1px solid #2d3148;border-radius:8px;color:#e2e8f0;font-size:13px;padding:10px;width:100%;font-family:inherit}
+.cfg-input:focus{outline:none;border-color:#4a9eff}
+.cfg-key-status{font-size:11px;margin-top:4px}
+
 /* Misc */
 .hidden{display:none!important}
 .section{display:none}
@@ -145,8 +172,10 @@ tr:hover td{background:#4a9eff08}
 
 <nav>
   <div class="tab active" onclick="switchTab('organizza')">Organizza</div>
+  <div class="tab" onclick="switchTab('struttura')">Struttura</div>
   <div class="tab" onclick="switchTab('duplicati')">Duplicati</div>
   <div class="tab" onclick="switchTab('rollback')">Rollback</div>
+  <div class="tab" onclick="switchTab('impostazioni')">⚙ Impostazioni</div>
 </nav>
 
 <main>
@@ -258,6 +287,172 @@ tr:hover td{background:#4a9eff08}
     </div>
   </section>
 
+  <!-- ── STRUTTURA ───────────────────────────────────────────────── -->
+  <section class="section" id="tab-struttura">
+
+    <!-- Analisi AI -->
+    <div class="card" style="border-color:#4a9eff44">
+      <div class="card-title" style="color:#4a9eff">Analisi intelligente</div>
+      <p style="font-size:13px;color:#64748b;margin-bottom:16px;line-height:1.6">
+        Scansiona i tuoi file reali, campiona i nomi e li invia all'AI (solo metadati — mai il contenuto).
+        L'AI analizza i pattern e propone una struttura <strong style="color:#e2e8f0">personalizzata per il tuo Drive</strong>.
+      </p>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <button class="btn btn-primary" id="btnAnalyze" onclick="startAnalysis()">
+          🤖 Analizza e proponi struttura
+        </button>
+        <div class="opt-group" style="flex-direction:row;align-items:center;gap:8px">
+          <label style="font-size:12px;color:#64748b;white-space:nowrap">Salva come</label>
+          <input type="text" id="analyzeNameInput" placeholder="nome_taxonomy (opzionale)"
+            style="background:#0f1117;border:1px solid #2d3148;border-radius:8px;color:#e2e8f0;font-size:13px;padding:8px 12px;width:200px">
+        </div>
+      </div>
+      <div class="log-panel visible" id="analyzeLog"></div>
+    </div>
+
+    <!-- Risultato analisi -->
+    <div class="card" id="taxonomyResultCard" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div>
+          <div class="card-title" style="margin-bottom:4px">Struttura proposta dall'AI</div>
+          <p id="taxonomyReasoning" style="font-size:12px;color:#64748b;line-height:1.5"></p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="saveTaxonomy()">💾 Salva taxonomy</button>
+          <button class="btn btn-primary" onclick="applyProposedTaxonomy()">▶ Usa per organizzare</button>
+        </div>
+      </div>
+
+      <!-- Cartelle proposte -->
+      <div class="card-title">Cartelle</div>
+      <div id="taxonomyFolders" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px"></div>
+
+      <!-- Regole -->
+      <div class="card-title">Regole di classificazione</div>
+      <div style="border-radius:8px;border:1px solid #2d3148;overflow:hidden;margin-bottom:12px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:#1a1d27">
+              <th style="padding:8px 12px;text-align:left;color:#64748b;font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.05em">Cartella</th>
+              <th style="padding:8px 12px;text-align:left;color:#64748b;font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.05em">Parole chiave</th>
+              <th style="padding:8px 12px;text-align:left;color:#64748b;font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.05em">Note AI</th>
+            </tr>
+          </thead>
+          <tbody id="taxonomyRulesBody"></tbody>
+        </table>
+      </div>
+
+      <!-- JSON grezzo collassabile -->
+      <details style="margin-top:8px">
+        <summary style="cursor:pointer;font-size:12px;color:#4a9eff;user-select:none">Mostra JSON completo</summary>
+        <pre id="taxonomyRawJson" style="background:#0a0c12;border:1px solid #2d3148;border-radius:8px;padding:12px;font-size:11px;color:#94a3b8;overflow-x:auto;margin-top:8px;max-height:300px;overflow-y:auto"></pre>
+      </details>
+    </div>
+
+    <!-- Confronto struttura -->
+    <div class="card">
+      <div class="card-title">Confronto struttura Drive</div>
+      <div class="card-title">Confronto struttura Drive</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <div class="opt-group" style="flex-direction:row;align-items:center;gap:8px">
+          <label style="white-space:nowrap">Strategia proposta</label>
+          <select id="strStratSelect" style="background:#0f1117;border:1px solid #2d3148;border-radius:8px;color:#e2e8f0;font-size:13px;padding:8px 12px">
+            <option value="type">Per tipo file</option>
+            <option value="date">Per data</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="btnCompare" onclick="loadStructure()">
+          🔍 Analizza struttura
+        </button>
+        <button class="btn btn-ghost" id="btnReloadCurrent" onclick="reloadCurrentStructure()" style="display:none">
+          ↺ Ricarica attuale
+        </button>
+      </div>
+      <div class="struct-legend">
+        <div style="display:flex;align-items:center;gap:6px"><div class="legend-dot" style="background:#22c55e"></div><span style="color:#64748b">Nuova cartella</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div class="legend-dot" style="background:#f59e0b"></div><span style="color:#64748b">Contenuto modificato</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div class="legend-dot" style="background:#2d3148"></div><span style="color:#64748b">Invariata</span></div>
+      </div>
+      <div class="struct-grid">
+        <div>
+          <div class="struct-panel-title current">Struttura attuale</div>
+          <div class="struct-panel" id="currentTree">
+            <div style="color:#64748b;font-size:13px;padding:20px 0;text-align:center">Premi "Analizza struttura" per caricare</div>
+          </div>
+          <div class="struct-summary" id="currentSummary"></div>
+        </div>
+        <div>
+          <div class="struct-panel-title proposed">Struttura proposta</div>
+          <div class="struct-panel" id="proposedTree">
+            <div style="color:#64748b;font-size:13px;padding:20px 0;text-align:center">Caricamento in corso...</div>
+          </div>
+          <div class="struct-summary" id="proposedSummary"></div>
+        </div>
+      </div>
+      <div class="log-panel visible" id="strLog" style="margin-top:12px"></div>
+    </div>
+
+  </section>
+
+  <!-- ── IMPOSTAZIONI ─────────────────────────────────────────── -->
+  <section class="section" id="tab-impostazioni">
+    <div class="card">
+      <div class="card-title">Provider AI attivo</div>
+      <div class="ai-grid" id="cfgProviderGrid"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">API Key cloud</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div class="opt-group">
+          <label>Anthropic API Key</label>
+          <input type="password" id="cfgAnthropicKey" class="cfg-input" placeholder="sk-ant-…">
+          <span id="cfgAnthropicStatus" class="cfg-key-status"></span>
+        </div>
+        <div class="opt-group">
+          <label>Gemini API Key</label>
+          <input type="password" id="cfgGeminiKey" class="cfg-input" placeholder="AIza…">
+          <span id="cfgGeminiStatus" class="cfg-key-status"></span>
+        </div>
+        <div class="opt-group">
+          <label>DeepSeek API Key</label>
+          <input type="password" id="cfgDeepseekKey" class="cfg-input" placeholder="sk-…">
+          <span id="cfgDeepseekStatus" class="cfg-key-status"></span>
+        </div>
+        <div class="opt-group">
+          <label>Qwen / DashScope API Key</label>
+          <input type="password" id="cfgDashscopeKey" class="cfg-input" placeholder="sk-…">
+          <span id="cfgDashscopeStatus" class="cfg-key-status"></span>
+        </div>
+      </div>
+      <div class="card-title">Ollama locale</div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px">
+        <div class="opt-group">
+          <label>URL</label>
+          <input type="text" id="cfgOllamaUrl" class="cfg-input">
+        </div>
+        <div class="opt-group">
+          <label>Modello</label>
+          <input type="text" id="cfgOllamaModel" class="cfg-input">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveConfig()">💾 Salva configurazione</button>
+      </div>
+      <div id="cfgMsg" style="font-size:13px;margin-top:10px;display:none"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cascade AI — come funziona</div>
+      <p style="font-size:13px;color:#64748b;line-height:1.8">
+        I file vengono classificati in cascata:<br>
+        <strong style="color:#22c55e">① Ollama locale</strong> — privacy totale, nessun dato esce<br>
+        <strong style="color:#f59e0b">② Haiku / Gemini Flash</strong> — se confidence &lt; 75%<br>
+        <strong style="color:#ef4444">③ Opus / Gemini Pro</strong> — fallback finale (max 200 file)<br>
+        <br>
+        <span style="color:#475569">Solo <em>metadati</em> (nome, tipo, dimensione) raggiungono le API cloud — mai il contenuto dei file.</span>
+      </p>
+    </div>
+  </section>
+
   <!-- ── ROLLBACK ───────────────────────────────────────────────── -->
   <section class="section" id="tab-rollback">
     <div class="card">
@@ -278,13 +473,14 @@ tr:hover td{background:#4a9eff08}
 // ── Tab switching ────────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    const names=['organizza','duplicati','rollback'];
+    const names=['organizza','struttura','duplicati','rollback','impostazioni'];
     t.classList.toggle('active', names[i]===name);
   });
   document.querySelectorAll('.section').forEach(s=>{
     s.classList.toggle('active', s.id==='tab-'+name);
   });
   if(name==='rollback') loadRollbacks();
+  if(name==='impostazioni') loadConfig();
 }
 
 // ── Status ───────────────────────────────────────────────────────────────────
@@ -499,6 +695,284 @@ async function doRollback(runId){
   });
   const {op_id}=await r.json();
   startStream(op_id, logEl, ()=>loadRollbacks());
+}
+
+// ── AI Analysis ──────────────────────────────────────────────────────────────
+let _currentTaxonomy = null;
+
+async function startAnalysis() {
+  const btn = document.getElementById('btnAnalyze');
+  const log = document.getElementById('analyzeLog');
+  const saveName = document.getElementById('analyzeNameInput').value.trim();
+  btn.disabled = true;
+  log.innerHTML = '';
+  document.getElementById('taxonomyResultCard').style.display = 'none';
+
+  const r = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({save_as: saveName}),
+  });
+  const {op_id} = await r.json();
+
+  const es = new EventSource('/api/stream/' + op_id);
+  es.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'ping') return;
+    if (msg.type === 'taxonomy') {
+      _currentTaxonomy = msg.taxonomy;
+      renderTaxonomy(msg.taxonomy);
+      if (msg.saved_path) {
+        log.innerHTML += `<div class="log-ok">✓ Salvata in: ${escHtml(msg.saved_path)}</div>`;
+      }
+      log.innerHTML += `<div class="log-ok">✓ ${escHtml(msg.message)}</div>`;
+    } else {
+      const cls = {ok:'log-ok', error:'log-error', info:'log-info'}[msg.type] || 'log-info';
+      const pfx = {ok:'✓', error:'✗', info:'›'}[msg.type] || '›';
+      log.innerHTML += `<div class="${cls}">${pfx} ${escHtml(msg.message)}</div>`;
+      log.scrollTop = log.scrollHeight;
+    }
+    if (msg.done) { es.close(); btn.disabled = false; }
+  };
+  es.onerror = () => {
+    log.innerHTML += '<div class="log-error">✗ Connessione interrotta</div>';
+    es.close(); btn.disabled = false;
+  };
+}
+
+function renderTaxonomy(tx) {
+  const card = document.getElementById('taxonomyResultCard');
+  card.style.display = 'block';
+
+  document.getElementById('taxonomyReasoning').textContent =
+    tx._reasoning || tx._description || '';
+
+  // Folders pills
+  const foldersEl = document.getElementById('taxonomyFolders');
+  foldersEl.innerHTML = (tx.folders || []).map(f =>
+    `<span style="background:#4a9eff15;border:1px solid #4a9eff44;border-radius:6px;padding:4px 10px;font-size:12px;color:#e2e8f0">📁 ${escHtml(f)}</span>`
+  ).join('');
+
+  // Rules table
+  const tbody = document.getElementById('taxonomyRulesBody');
+  tbody.innerHTML = (tx.rules || []).map((rule, i) => `
+    <tr style="${i%2===0?'':'background:#ffffff04'}">
+      <td style="padding:8px 12px;color:#4a9eff;white-space:nowrap;vertical-align:top">${escHtml(rule.target)}</td>
+      <td style="padding:8px 12px;color:#94a3b8;font-family:monospace;font-size:11px;max-width:300px;word-break:break-word">${escHtml(rule.match)}</td>
+      <td style="padding:8px 12px;color:#64748b;font-size:11px">${escHtml(rule.description || '')}</td>
+    </tr>`).join('');
+
+  // Raw JSON
+  document.getElementById('taxonomyRawJson').textContent =
+    JSON.stringify(tx, null, 2);
+
+  card.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+async function saveTaxonomy() {
+  if (!_currentTaxonomy) return;
+  const name = document.getElementById('analyzeNameInput').value.trim() || 'ai_generated';
+  const r = await fetch('/api/taxonomy/save', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name, taxonomy: _currentTaxonomy}),
+  });
+  const d = await r.json();
+  if (d.ok) alert(`Salvata: ${d.path}`);
+}
+
+function applyProposedTaxonomy() {
+  if (!_currentTaxonomy) return;
+  // Switch to Organizza tab and pre-fill custom strategy
+  switchTab('organizza');
+  // Select "custom" strategy
+  const customRadio = document.querySelector('input[name="strategy"][value="custom"]');
+  if (customRadio) {
+    customRadio.checked = true;
+    customRadio.dispatchEvent(new Event('change'));
+  }
+  const promptEl = document.getElementById('customPrompt');
+  if (promptEl) {
+    promptEl.value = _currentTaxonomy._description || 'Struttura proposta da analisi AI';
+  }
+  // Store taxonomy for the organize call
+  window._pendingTaxonomy = _currentTaxonomy;
+  document.getElementById('analyzeLog') &&
+    (document.getElementById('analyzeLog').innerHTML +=
+     '<div class="log-info">› Passa al tab Organizza e premi Anteprima</div>');
+}
+
+// ── Structure ────────────────────────────────────────────────────────────────
+let _currentFolders = new Set();
+let _strLoaded = false;
+
+async function loadStructure() {
+  const btn = document.getElementById('btnCompare');
+  const log = document.getElementById('strLog');
+  btn.disabled = true;
+  log.innerHTML = '';
+  document.getElementById('currentTree').innerHTML = '<div style="color:#64748b;font-size:13px;padding:20px 0;text-align:center">Scansione in corso...</div>';
+  document.getElementById('proposedTree').innerHTML = '<div style="color:#64748b;font-size:13px;padding:20px 0;text-align:center">In attesa...</div>';
+
+  // Load current structure
+  try {
+    log.innerHTML += '<div class="log-info">› Caricamento struttura attuale...</div>';
+    const r = await fetch('/api/structure/current');
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    _currentFolders = new Set(d.tree.map(n => n.name));
+    renderCurrentTree(d);
+    document.getElementById('currentSummary').textContent =
+      `${d.total_files.toLocaleString()} file · ${d.total_folders.toLocaleString()} cartelle`;
+    log.innerHTML += '<div class="log-ok">✓ Struttura attuale caricata</div>';
+    document.getElementById('btnReloadCurrent').style.display = 'inline-flex';
+  } catch(e) {
+    log.innerHTML += `<div class="log-error">✗ Errore struttura attuale: ${escHtml(String(e))}</div>`;
+    btn.disabled = false;
+    return;
+  }
+
+  // Load proposed structure via SSE
+  const strategy = document.getElementById('strStratSelect').value;
+  log.innerHTML += '<div class="log-info">› Classificazione struttura proposta...</div>';
+  document.getElementById('proposedTree').innerHTML = '<div style="color:#64748b;font-size:13px;padding:20px 0;text-align:center">Classificazione in corso...</div>';
+
+  try {
+    const r2 = await fetch('/api/structure/proposed', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({strategy}),
+    });
+    const {op_id} = await r2.json();
+    const logEl = document.getElementById('strLog');
+
+    const es = new EventSource('/api/stream/' + op_id);
+    es.onmessage = e => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'ping') return;
+      if (msg.type === 'tree') {
+        renderProposedTree(msg.tree);
+        document.getElementById('proposedSummary').textContent =
+          `${msg.total.toLocaleString()} movimenti proposti · ${msg.tree.length} cartelle top-level`;
+        logEl.innerHTML += `<div class="log-ok">✓ ${escHtml(msg.message)}</div>`;
+      } else if (msg.type !== 'progress') {
+        const cls = {ok:'log-ok', error:'log-error', info:'log-info'}[msg.type]||'log-info';
+        logEl.innerHTML += `<div class="${cls}">${escHtml(msg.message)}</div>`;
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+      if (msg.done) { es.close(); btn.disabled = false; _strLoaded = true; }
+    };
+    es.onerror = () => {
+      logEl.innerHTML += '<div class="log-error">✗ Connessione interrotta</div>';
+      es.close(); btn.disabled = false;
+    };
+  } catch(e) {
+    log.innerHTML += `<div class="log-error">✗ Errore struttura proposta: ${escHtml(String(e))}</div>`;
+    btn.disabled = false;
+  }
+}
+
+async function reloadCurrentStructure() {
+  // Invalida cache lato server
+  await fetch('/api/structure/cache/clear', {method:'POST'}).catch(()=>{});
+  loadStructure();
+}
+
+function renderCurrentTree(data) {
+  const el = document.getElementById('currentTree');
+  el.innerHTML = data.tree.map(node => renderNode(node, false)).join('');
+}
+
+function renderProposedTree(tree) {
+  const el = document.getElementById('proposedTree');
+  el.innerHTML = tree.map(node => renderNode(node, true)).join('');
+}
+
+function renderNode(node, isProposed) {
+  const isNew = isProposed && !_currentFolders.has(node.name);
+  const cls = isNew ? 'new' : 'same';
+  const icon = isNew ? '📁' : '🗂';
+  const hasChildren = node.children && node.children.length > 0;
+  const uid = 'tree_' + Math.random().toString(36).slice(2);
+  const types = node.types ? `<div class="tree-types">${node.types.map(t=>`${t.ext}:${t.count}`).join(' · ')}</div>` : '';
+  const children = hasChildren
+    ? `<div class="tree-children" id="${uid}">${node.children.map(c =>
+        `<div class="tree-folder same" style="padding:3px 8px">
+          <span class="tree-icon" style="font-size:11px">└</span>
+          <span class="tree-name" style="font-size:12px;color:#94a3b8">${escHtml(c.name)}</span>
+          <span class="tree-count">${c.count}</span>
+        </div>`).join('')}</div>`
+    : '';
+  const toggle = hasChildren ? `onclick="toggleTree('${uid}')"` : '';
+  return `<div class="tree-node">
+    <div class="tree-folder ${cls}" ${toggle}>
+      <span class="tree-icon">${icon}${hasChildren ? ' ▸' : ''}</span>
+      <span class="tree-name">${escHtml(node.name)}</span>
+      <span class="tree-count">${node.count}</span>
+    </div>
+    ${types}
+    ${children}
+  </div>`;
+}
+
+function toggleTree(uid) {
+  const el = document.getElementById(uid);
+  if (el) el.classList.toggle('open');
+}
+
+// ── Config ────────────────────────────────────────────────────────────────────
+async function loadConfig(){
+  try{
+    const r=await fetch('/api/config');
+    const d=await r.json();
+    document.getElementById('cfgAnthropicKey').placeholder=d.anthropic_key;
+    document.getElementById('cfgGeminiKey').placeholder=d.gemini_key;
+    document.getElementById('cfgDeepseekKey').placeholder=d.deepseek_key;
+    document.getElementById('cfgDashscopeKey').placeholder=d.dashscope_key;
+    document.getElementById('cfgOllamaUrl').value=d.ollama_url;
+    document.getElementById('cfgOllamaModel').value=d.ollama_model;
+    const setStatus=(id,set)=>{
+      const el=document.getElementById(id);
+      el.textContent=set?'✓ Configurata':'Non configurata';
+      el.style.color=set?'#22c55e':'#64748b';
+    };
+    setStatus('cfgAnthropicStatus',d.anthropic_set);
+    setStatus('cfgGeminiStatus',d.gemini_set);
+    setStatus('cfgDeepseekStatus',d.deepseek_set);
+    setStatus('cfgDashscopeStatus',d.dashscope_set);
+    const color=d.anthropic_set?'#22c55e':d.gemini_set?'#4a9eff':d.deepseek_set?'#a78bfa':d.dashscope_set?'#f97316':'#f59e0b';
+    document.getElementById('cfgProviderGrid').innerHTML=`
+      <div class="ai-item"><div class="label">Provider attivo</div><div class="value" style="color:${color}">${escHtml(d.active_provider)}</div></div>
+      <div class="ai-item"><div class="label">Ollama</div><div class="value" style="color:#94a3b8">${escHtml(d.ollama_model)}</div></div>
+      <div class="ai-item"><div class="label">Anthropic</div><div class="value ${d.anthropic_set?'ok':'no'}">${d.anthropic_set?'Attivo':'—'}</div></div>
+      <div class="ai-item"><div class="label">Gemini</div><div class="value ${d.gemini_set?'ok':'no'}">${d.gemini_set?'Attivo':'—'}</div></div>
+      <div class="ai-item"><div class="label">DeepSeek</div><div class="value ${d.deepseek_set?'ok':'no'}">${d.deepseek_set?'Attivo':'—'}</div></div>
+      <div class="ai-item"><div class="label">Qwen</div><div class="value ${d.dashscope_set?'ok':'no'}">${d.dashscope_set?'Attivo':'—'}</div></div>`;
+  }catch(e){console.error(e);}
+}
+
+async function saveConfig(){
+  const msg=document.getElementById('cfgMsg');
+  const body={
+    anthropic_key:document.getElementById('cfgAnthropicKey').value,
+    gemini_key:document.getElementById('cfgGeminiKey').value,
+    deepseek_key:document.getElementById('cfgDeepseekKey').value,
+    dashscope_key:document.getElementById('cfgDashscopeKey').value,
+    ollama_url:document.getElementById('cfgOllamaUrl').value,
+    ollama_model:document.getElementById('cfgOllamaModel').value,
+  };
+  try{
+    await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    msg.style.display='block';
+    msg.style.color='#22c55e';
+    msg.textContent='✓ Salvato. Riavvia il server per applicare le nuove chiavi.';
+    ['cfgAnthropicKey','cfgGeminiKey','cfgDeepseekKey','cfgDashscopeKey'].forEach(id=>document.getElementById(id).value='');
+    loadConfig();
+  }catch(e){
+    msg.style.display='block';
+    msg.style.color='#ef4444';
+    msg.textContent='✗ Errore: '+e;
+  }
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────

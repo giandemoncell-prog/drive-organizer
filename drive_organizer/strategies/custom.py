@@ -21,7 +21,8 @@ def _file_searchable(file: DriveFile) -> str:
 def _matches_keyword(kw: str, searchable: str) -> bool:
     if kw.startswith("."):
         return kw in searchable
-    pattern = r"(?<![a-z0-9_])" + re.escape(kw) + r"(?![a-z0-9_])"
+    # Exclude _ from word boundary so underscore-separated names match (e.g. bachata in bachata_vibes)
+    pattern = r"(?<![a-z0-9])" + re.escape(kw) + r"(?![a-z0-9])"
     return bool(re.search(pattern, searchable, re.IGNORECASE))
 
 

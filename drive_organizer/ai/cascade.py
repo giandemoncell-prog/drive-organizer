@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from drive_organizer.ai.ollama_provider import OllamaProvider
     from drive_organizer.ai.opus_provider import OpusProvider
 
-_BATCH_SIZE = 20
+_BATCH_SIZE = 30
 
 
 class AICascade:
