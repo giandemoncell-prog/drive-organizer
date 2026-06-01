@@ -22,7 +22,6 @@ jobs:
           DIST="dist_chromebook"
           mkdir -p "$DIST"
 
-          # Sorgenti essenziali
           cp -r drive_organizer  "$DIST/"
           cp    main.py          "$DIST/"
           cp    requirements.txt "$DIST/"
@@ -30,70 +29,10 @@ jobs:
           cp    taxonomy_custom.json "$DIST/" 2>/dev/null || true
           cp    MANUALE.md       "$DIST/" 2>/dev/null || true
 
-          # install.sh — usa Python3 di sistema (già presente su Crostini/Debian)
-          cat > "$DIST/install.sh" << 'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-INSTALL_DIR="$HOME/.local/bin"
-APP_DIR="$HOME/.config/drive-organizer"
+          cp scripts/install-chromebook.sh   "$DIST/install.sh"
+          cp scripts/uninstall-chromebook.sh "$DIST/uninstall.sh"
+          chmod +x "$DIST/install.sh" "$DIST/uninstall.sh"
 
-echo "=== Drive Organizer — installazione Chromebook/Linux ==="
-
-# Dipendenze di sistema
-sudo apt-get update -qq
-sudo apt-get install -y python3 python3-pip python3-venv ca-certificates
-
-# Venv + dipendenze Python
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-python3 -m venv "$SCRIPT_DIR/.venv"
-"$SCRIPT_DIR/.venv/bin/pip" install --upgrade pip -q
-"$SCRIPT_DIR/.venv/bin/pip" install -r "$SCRIPT_DIR/requirements.txt" -q
-
-# File di configurazione
-mkdir -p "$APP_DIR"
-cp "$SCRIPT_DIR/taxonomy_custom.json" "$APP_DIR/" 2>/dev/null || true
-[ ! -f "$SCRIPT_DIR/.env" ] && cp "$SCRIPT_DIR/.env.example" "$SCRIPT_DIR/.env"
-
-# Wrapper globale
-mkdir -p "$INSTALL_DIR"
-WRAPPER="$INSTALL_DIR/drive-organizer"
-cat > "$WRAPPER" << WRAPPER_EOF
-#!/usr/bin/env bash
-source "$SCRIPT_DIR/.venv/bin/activate"
-python "$SCRIPT_DIR/main.py" "\$@"
-WRAPPER_EOF
-chmod +x "$WRAPPER"
-
-# PATH
-for RC in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
-    if [ -f "$RC" ] && ! grep -q '.local/bin' "$RC"; then
-        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC"
-    fi
-done
-
-echo ""
-echo "=== Installazione completata! ==="
-echo ""
-echo "Prossimi passi:"
-echo "1. Copia credentials.json in $SCRIPT_DIR/"
-echo "   Su ChromeOS: cp /mnt/chromeos/MyFiles/Downloads/credentials.json $SCRIPT_DIR/"
-echo "2. Riapri il terminale (o: source ~/.bashrc)"
-echo "3. drive-organizer setup && drive-organizer auth"
-EOF
-          chmod +x "$DIST/install.sh"
-
-          # uninstall.sh
-          cat > "$DIST/uninstall.sh" << 'EOF'
-#!/usr/bin/env bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-rm -f "$HOME/.local/bin/drive-organizer"
-rm -rf "$SCRIPT_DIR/.venv"
-rm -rf "$HOME/.config/drive-organizer"
-echo "Drive Organizer rimosso."
-EOF
-          chmod +x "$DIST/uninstall.sh"
-
-          # Archivio
           tar -czf "DriveOrganizer_v${VERSION}_Chromebook.tar.gz" -C "$DIST" .
           ls -lh "DriveOrganizer_v${VERSION}_Chromebook.tar.gz"
 
@@ -115,6 +54,7 @@ EOF
         with:
           python-version: "3.11"
           cache: "pip"
+          cache-dependency-path: pyproject.toml
 
       - name: Install system dependencies
         run: sudo apt-get update -qq && sudo apt-get install -y libssl-dev zlib1g-dev
@@ -125,7 +65,8 @@ EOF
           pip install -e ".[dev]"
 
       - name: Create dummy credentials.json (build only)
-        run: echo '{"installed":{"client_id":"x","client_secret":"x","redirect_uris":["urn:ietf:wg:oauth:2.0:oob"]}}' > credentials.json
+        run: |
+          echo '{"installed":{"client_id":"x","client_secret":"x","redirect_uris":["urn:ietf:wg:oauth:2.0:oob"]}}' > credentials.json
 
       - name: Build with PyInstaller
         run: python -m PyInstaller drive_organizer.spec --clean --noconfirm
@@ -142,30 +83,9 @@ EOF
           cp .env.example          "$DIST/"
           chmod +x "$DIST/drive-organizer"
 
-          cat > "$DIST/install.sh" << 'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-INSTALL_DIR="$HOME/.local/bin"
-mkdir -p "$INSTALL_DIR"
-cp drive-organizer "$INSTALL_DIR/"
-chmod +x "$INSTALL_DIR/drive-organizer"
-cp taxonomy_custom.json "$HOME/.config/drive-organizer/" 2>/dev/null || true
-for RC in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
-    if [ -f "$RC" ] && ! grep -q '.local/bin' "$RC"; then
-        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC"
-    fi
-done
-echo "Fatto! Riapri il terminale: drive-organizer setup"
-EOF
-          chmod +x "$DIST/install.sh"
-
-          cat > "$DIST/uninstall.sh" << 'EOF'
-#!/usr/bin/env bash
-rm -f "$HOME/.local/bin/drive-organizer"
-rm -rf "$HOME/.config/drive-organizer"
-echo "Drive Organizer rimosso."
-EOF
-          chmod +x "$DIST/uninstall.sh"
+          cp scripts/install-linux.sh   "$DIST/install.sh"
+          cp scripts/uninstall-linux.sh "$DIST/uninstall.sh"
+          chmod +x "$DIST/install.sh" "$DIST/uninstall.sh"
 
           tar -czf "DriveOrganizer_v${VERSION}_Linux.tar.gz" -C "$DIST" .
           ls -lh "DriveOrganizer_v${VERSION}_Linux.tar.gz"
@@ -202,15 +122,14 @@ EOF
             | Piattaforma | File | Dimensione |
             |---|---|---|
             | Linux (binario standalone) | `DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz` | ~60 MB |
-            | **Chrome OS / Chromebook** | **`DriveOrganizer_v${{ github.event.inputs.version }}_Chromebook.tar.gz`** | **~500 KB** |
-            | Windows | build locale con `build\build_windows.bat` | — |
+            | Chrome OS / Chromebook | `DriveOrganizer_v${{ github.event.inputs.version }}_Chromebook.tar.gz` | ~500 KB |
+            | Windows | build locale con `build\build_windows.bat` | - |
 
             ### Chromebook (consigliato per Chrome OS)
 
-            > Pacchetto leggero (~500 KB): usa Python3 già presente in Crostini.
+            Pacchetto leggero (~500 KB): usa Python3 gia presente in Crostini.
 
             ```bash
-            # Dal Terminale Linux di Chrome OS:
             wget https://github.com/giandemoncell-prog/drive-organizer/releases/latest/download/DriveOrganizer_v${{ github.event.inputs.version }}_Chromebook.tar.gz
             mkdir ~/DriveOrganizer
             tar -xzf DriveOrganizer_v${{ github.event.inputs.version }}_Chromebook.tar.gz -C ~/DriveOrganizer/
@@ -220,8 +139,7 @@ EOF
             Poi copia `credentials.json`:
             ```bash
             cp /mnt/chromeos/MyFiles/Downloads/credentials.json ~/DriveOrganizer/
-            drive-organizer setup
-            drive-organizer auth
+            drive-organizer setup && drive-organizer auth
             ```
 
             ### Linux generico (senza Python installato)
@@ -234,7 +152,7 @@ EOF
             ```
 
             ### Changelog
-            - Release iniziale v${{ github.event.inputs.version }}
+            - Release v${{ github.event.inputs.version }}
           files: |
             DriveOrganizer_v${{ github.event.inputs.version }}_Chromebook.tar.gz
             DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz
