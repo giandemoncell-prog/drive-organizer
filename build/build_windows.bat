@@ -4,7 +4,10 @@ setlocal enabledelayedexpansion
 
 :: Cartella radice del progetto (una sopra rispetto a build\)
 set "ROOT=%~dp0.."
-set "VERSION=1.0.0"
+
+:: Leggi la versione da pyproject.toml (unica source of truth)
+for /f %%v in ('python -c "import tomllib; f=open(r\"%ROOT%\pyproject.toml\",\"rb\"); d=tomllib.load(f); f.close(); print(d[\"project\"][\"version\"])"') do set VERSION=%%v
+if not defined VERSION set VERSION=0.0.0
 
 echo ============================================
 echo  Drive Organizer v%VERSION% — Build Windows

@@ -52,6 +52,11 @@ def _build_cascade():
         haiku = HaikuProvider()
         opus = OpusProvider()
     else:
+        console.print(
+            "[yellow]Avviso: nessuna API key configurata (ANTHROPIC_API_KEY o GEMINI_API_KEY).[/yellow]\n"
+            "L'escalation cloud è disabilitata — solo Ollama locale verrà usato.\n"
+            "Configura una chiave in [bold].env[/bold] per abilitare la cascade completa."
+        )
         from drive_organizer.ai.haiku_provider import HaikuProvider
         from drive_organizer.ai.opus_provider import OpusProvider
         haiku = HaikuProvider()

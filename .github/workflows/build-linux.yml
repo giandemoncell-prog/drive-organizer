@@ -114,6 +114,7 @@ EOF
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: "pip"
 
       - name: Install system dependencies
         run: sudo apt-get update -qq && sudo apt-get install -y libssl-dev zlib1g-dev
@@ -121,8 +122,7 @@ EOF
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install pyinstaller
-          pip install -r requirements.txt
+          pip install -e ".[dev]"
 
       - name: Create dummy credentials.json (build only)
         run: echo '{"installed":{"client_id":"x","client_secret":"x","redirect_uris":["urn:ietf:wg:oauth:2.0:oob"]}}' > credentials.json
@@ -201,9 +201,9 @@ EOF
 
             | Piattaforma | File | Dimensione |
             |---|---|---|
-            | Windows (installer) | `DriveOrganizer_Setup_v${{ github.event.inputs.version }}.exe` | ~60 MB |
             | Linux (binario standalone) | `DriveOrganizer_v${{ github.event.inputs.version }}_Linux.tar.gz` | ~60 MB |
             | **Chrome OS / Chromebook** | **`DriveOrganizer_v${{ github.event.inputs.version }}_Chromebook.tar.gz`** | **~500 KB** |
+            | Windows | build locale con `build\build_windows.bat` | — |
 
             ### Chromebook (consigliato per Chrome OS)
 
