@@ -10,8 +10,8 @@ if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
 
 try:
     import certifi
-    os.environ.setdefault("REQUESTS_CA_BUNDLE", certifi.where())
-    os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+    os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
+    os.environ["SSL_CERT_FILE"] = certifi.where()
 except ImportError:
     pass
 
@@ -495,7 +495,10 @@ def duplicates(account, apply, archive_folder):
 
 @cli.command()
 @_ACCOUNT_OPTION
-def rollback(account):
+@click.option("--run-id", default=None, help="ID sessione da annullare (prefisso 8 char). Se omesso: interattivo.")
+@click.option("--yes", "-y", is_flag=True, default=False, help="Conferma senza prompt.")
+@click.option("--all", "rollback_all", is_flag=True, default=False, help="Annulla tutte le sessioni in ordine inverso.")
+def rollback(account, run_id, yes, rollback_all):
     """Annulla una sessione di organizzazione precedente."""
     _check_credentials()
     from drive_organizer.auth.google_auth import get_drive_service
@@ -511,12 +514,24 @@ def rollback(account):
     if not manifests:
         return
 
-    chosen = select_rollback(console, manifests)
-    if not chosen:
-        console.print("[yellow]Annullato.[/yellow]")
+    if rollback_all:
+        for m in manifests:
+            console.print(f"\n[bold]Rollback sessione {m.run_id[:8]} ({len(m.entries)} file)…[/bold]")
+            mgr.execute_rollback(m)
         return
 
-    if not click.confirm(
+    if run_id:
+        chosen = next((m for m in manifests if m.run_id.startswith(run_id)), None)
+        if not chosen:
+            console.print(f"[red]Sessione '{run_id}' non trovata.[/red]")
+            return
+    else:
+        chosen = select_rollback(console, manifests)
+        if not chosen:
+            console.print("[yellow]Annullato.[/yellow]")
+            return
+
+    if not yes and not click.confirm(
         f"Ripristinare {len(chosen.entries)} file dalla sessione {chosen.run_id[:8]}?",
         default=False,
     ):

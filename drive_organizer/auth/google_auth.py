@@ -3,10 +3,27 @@ from __future__ import annotations
 from pathlib import Path
 
 import click
+import requests as _requests
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+
+try:
+    import truststore
+    truststore.inject_into_ssl()
+except ImportError:
+    try:
+        import certifi as _certifi
+        import ssl as _ssl
+        _ssl_ctx = _ssl.create_default_context(cafile=_certifi.where())
+    except ImportError:
+        pass
+
+
+def _authed_request() -> Request:
+    session = _requests.Session()
+    return Request(session=session)
 
 from drive_organizer.config import settings
 
@@ -63,7 +80,7 @@ def get_drive_service(account: str | None = None):
         return build("drive", "v3", credentials=creds)
 
     if creds and creds.expired and creds.refresh_token:
-        creds.refresh(Request())
+        creds.refresh(_authed_request())
         if token_file:
             token_file.write_text(creds.to_json(), encoding="utf-8")
         return build("drive", "v3", credentials=creds)
