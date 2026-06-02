@@ -149,8 +149,12 @@ class DriveClient:
         for op in operations:
             if op.skipped or not op.target_parent_id:
                 continue
+            old_parent = op.source_parents[0] if op.source_parents else "root"
+            if old_parent == op.target_parent_id:
+                if progress and task_id is not None:
+                    progress.advance(task_id)
+                continue
             try:
-                old_parent = op.source_parents[0] if op.source_parents else "root"
                 self.move_file(op.file_id, op.target_parent_id, old_parent)
                 if on_success:
                     on_success(op)
