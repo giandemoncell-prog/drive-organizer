@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import TYPE_CHECKING
 
 from rich.progress import Progress
@@ -17,6 +18,8 @@ if TYPE_CHECKING:
     from drive_organizer.ai.opus_provider import OpusProvider
 
 _BATCH_SIZE = 30
+_CLOUD_INTER_BATCH_SLEEP = 0.25  # seconds between cloud batches to avoid rate limits
+_CLOUD_RETRY_ATTEMPTS = 2
 
 
 class AICascade:
@@ -92,16 +95,13 @@ class AICascade:
 
         # Step 3: Haiku (metadata only, no content)
         haiku_low: list[DriveFile] = []
-        _haiku_failed = False
         for batch in _batches(ollama_low, _BATCH_SIZE):
-            if self._cloud_escalations >= settings.max_cloud_escalations or _haiku_failed:
+            if self._cloud_escalations >= settings.max_cloud_escalations:
                 break
             reqs = [build_request(f) for f in batch]
-            try:
-                batch_results = self._haiku.classify_batch(reqs, hint, allowed)
-            except Exception:
-                _haiku_failed = True
-                break
+            batch_results = _retry_classify(self._haiku, reqs, hint, allowed)
+            if batch_results is None:
+                continue  # skip this batch only, not all remaining
             self._cloud_escalations += len(batch)
             for f, hres in zip(batch, batch_results):
                 ollama_res = results.get(f.id)
@@ -120,6 +120,7 @@ class AICascade:
                 else:
                     haiku_low.append(f)
                     results[f.id] = hres
+            time.sleep(_CLOUD_INTER_BATCH_SLEEP)
 
         if not haiku_low:
             return [results.get(f.id, _fallback(f)) for f in files]
@@ -129,14 +130,14 @@ class AICascade:
             if self._cloud_escalations >= settings.max_cloud_escalations:
                 break
             reqs = [build_request(f) for f in batch]
-            try:
-                batch_results = self._opus.classify_batch(reqs, hint, allowed)
-            except Exception:
-                break
+            batch_results = _retry_classify(self._opus, reqs, hint, allowed)
+            if batch_results is None:
+                continue
             self._cloud_escalations += len(batch)
             for f, ores in zip(batch, batch_results):
                 results[f.id] = ores
                 self._cache.set(f, ores)
+            time.sleep(_CLOUD_INTER_BATCH_SLEEP)
 
         return [results.get(f.id, _fallback(f)) for f in files]
 
@@ -151,6 +152,24 @@ class AICascade:
 def _batches(items: list, size: int):
     for i in range(0, len(items), size):
         yield items[i: i + size]
+
+
+def _retry_classify(provider, reqs, hint, allowed, *, attempts=_CLOUD_RETRY_ATTEMPTS):
+    """Call provider.classify_batch with exponential-backoff retries.
+
+    Returns None if all attempts fail so the caller can skip that batch
+    without aborting remaining ones.
+    """
+    delay = 1.0
+    for i in range(attempts + 1):
+        try:
+            return provider.classify_batch(reqs, hint, allowed)
+        except Exception:
+            if i == attempts:
+                return None
+            time.sleep(delay)
+            delay *= 2
+    return None  # unreachable, satisfies type checker
 
 
 def _fallback(f: DriveFile) -> ClassificationResult:

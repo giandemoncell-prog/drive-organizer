@@ -29,3 +29,6 @@ __pycache__/
 # Ambienti virtuali
 .venv/
 venv/
+
+# Plugin cache Claude Code
+.omc/

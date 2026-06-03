@@ -22,7 +22,7 @@ class ClassificationResult(BaseModel):
     target_path: str
     confidence: float = Field(ge=0.0, le=1.0)
     reasoning: str = ""
-    provider: Literal["ollama", "haiku", "opus", "deterministic"]
+    provider: Literal["ollama", "haiku", "opus", "gemini", "deepseek", "qwen", "deterministic"]
     used_content: bool = False
 
 

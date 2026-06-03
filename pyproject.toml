@@ -32,10 +32,16 @@ dependencies = [
 drive-organizer = "main:cli"
 
 [project.optional-dependencies]
-dev = ["pyinstaller>=6.0"]
+dev = ["pyinstaller>=6.0", "pytest>=8.0", "pytest-cov>=5.0"]
 
 [tool.setuptools]
 py-modules = ["main"]
 
 [tool.setuptools.packages.find]
 include = ["drive_organizer*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
