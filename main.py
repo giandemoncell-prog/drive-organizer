@@ -287,9 +287,11 @@ def organize(account, strategy, custom_prompt, taxonomy_file, apply, yes, ollama
 @cli.command()
 @_ACCOUNT_OPTION
 @click.option("--apply", is_flag=True, default=False, help="Applica le rinomina (default: solo preview)")
-@click.option("--limit", default=0, help="Analizza solo i primi N file (0 = tutti)", type=int)
+@click.option("--yes", "-y", is_flag=True, default=False, help="Conferma automaticamente senza prompt interattivo")
+@click.option("--limit", default=0, help="Analizza solo N file (0 = tutti)", type=int)
+@click.option("--offset", default=0, help="Salta i primi N file (per elaborare in batch)", type=int)
 @click.option("--min-confidence", default=0.65, help="Soglia confidenza minima (0.0-1.0)", type=float)
-def rename(account, apply, limit, min_confidence):
+def rename(account, apply, yes, limit, offset, min_confidence):
     """Rinomina i file usando Ollama (AI locale — contenuto mai al cloud)."""
     _check_credentials()
 
@@ -320,9 +322,12 @@ def rename(account, apply, limit, min_confidence):
         files, _ = client.scan_all_files()
 
     movable = [f for f in files if not f.is_folder and not f.is_shortcut and f.owned_by_me]
+    if offset > 0:
+        movable = movable[offset:]
+        console.print(f"[dim]Salti i primi {offset} file.[/dim]")
     if limit > 0:
         movable = movable[:limit]
-        console.print(f"[dim]Analisi limitata ai primi {limit} file.[/dim]")
+        console.print(f"[dim]Analisi limitata a {limit} file (offset {offset}).[/dim]")
     console.print(f"[green]{len(movable)} file da analizzare.[/green]")
 
     console.print(f"\n[bold]Analisi nomi con Ollama ({renamer._model})…[/bold]")
@@ -348,7 +353,7 @@ def rename(account, apply, limit, min_confidence):
         console.print("[bold yellow]Modalità preview. Usa --apply per rinominare.[/bold yellow]")
         return
 
-    if not click.confirm(f"Rinominare {len(active)} file?", default=False):
+    if not yes and not click.confirm(f"Rinominare {len(active)} file?", default=False):
         console.print("[yellow]Annullato.[/yellow]")
         return
 
