@@ -80,10 +80,13 @@ def get_drive_service(account: str | None = None):
         return build("drive", "v3", credentials=creds)
 
     if creds and creds.expired and creds.refresh_token:
-        creds.refresh(_authed_request())
-        if token_file:
-            token_file.write_text(creds.to_json(), encoding="utf-8")
-        return build("drive", "v3", credentials=creds)
+        try:
+            creds.refresh(_authed_request())
+            if token_file:
+                token_file.write_text(creds.to_json(), encoding="utf-8")
+            return build("drive", "v3", credentials=creds)
+        except Exception:
+            creds = None  # fall through to fresh OAuth flow
 
     # Fresh OAuth flow
     flow = InstalledAppFlow.from_client_secrets_file(
