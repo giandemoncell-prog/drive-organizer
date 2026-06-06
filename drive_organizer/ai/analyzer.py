@@ -118,6 +118,23 @@ def _format_prompt(profile: dict, existing_folders: list[str]) -> str:
     )
 
 
+def _call_anthropic(prompt: str) -> dict:
+    import anthropic
+    from drive_organizer.config import settings
+
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    resp = client.messages.create(
+        model=settings.opus_model,
+        max_tokens=4096,
+        system=_SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+    )
+    raw = resp.content[0].text
+    raw = re.sub(r"```[a-z]*\n?", "", raw).strip()
+    return json.loads(raw)
+
+
 def _call_gemini(prompt: str) -> dict:
     from google import genai
     from google.genai import types
@@ -203,6 +220,12 @@ def analyze_and_propose(
     prompt = _format_prompt(profile, existing_top_folders)
 
     last_error = None
+    if settings.anthropic_api_key:
+        try:
+            return _call_anthropic(prompt)
+        except Exception as e:
+            last_error = e
+
     if settings.gemini_api_key:
         try:
             return _call_gemini(prompt)

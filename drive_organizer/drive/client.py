@@ -137,6 +137,24 @@ class DriveClient:
             supportsAllDrives=True,
         ).execute()
 
+    def _move_with_retry(self, op: MoveOperation, *, max_attempts: int = 3) -> bool:
+        """Move a file with exponential backoff on 429. Returns True on success."""
+        old_parent = op.source_parents[0] if op.source_parents else "root"
+        delay = 5.0
+        for attempt in range(max_attempts):
+            try:
+                self.move_file(op.file_id, op.target_parent_id, old_parent)
+                return True
+            except HttpError as e:
+                if e.resp.status == 429 and attempt < max_attempts - 1:
+                    time.sleep(delay)
+                    delay *= 2
+                else:
+                    return False
+            except Exception:
+                return False
+        return False
+
     def batch_move(
         self,
         operations: list[MoveOperation],
@@ -144,7 +162,7 @@ class DriveClient:
         task_id=None,
         on_success: Callable[[MoveOperation], None] | None = None,
     ) -> list[str]:
-        """Execute moves one by one. Returns list of failed file_ids."""
+        """Execute moves with exponential-backoff retry. Returns list of failed file_ids."""
         failed: list[str] = []
         for op in operations:
             if op.skipped or not op.target_parent_id:
@@ -154,28 +172,13 @@ class DriveClient:
                 if progress and task_id is not None:
                     progress.advance(task_id)
                 continue
-            try:
-                self.move_file(op.file_id, op.target_parent_id, old_parent)
+            if self._move_with_retry(op):
                 if on_success:
                     on_success(op)
-            except HttpError as e:
-                if e.resp.status == 429:
-                    time.sleep(5)
-                    try:
-                        old_parent = op.source_parents[0] if op.source_parents else "root"
-                        self.move_file(op.file_id, op.target_parent_id, old_parent)
-                        if on_success:
-                            on_success(op)
-                    except Exception:
-                        failed.append(op.file_id)
-                else:
-                    failed.append(op.file_id)
-            except Exception:
+            else:
                 failed.append(op.file_id)
-
             if progress and task_id is not None:
                 progress.advance(task_id)
-
         return failed
 
     def get_about(self) -> dict:

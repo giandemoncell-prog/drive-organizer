@@ -44,26 +44,31 @@ class AICascade:
     ) -> list[ClassificationResult]:
         hint = strategy.build_prompt_hint()
         allowed = strategy.allowed_folders() or None
+        # Custom strategy uses keyword matching per file name — caching by (ext, size, mime)
+        # would conflate unrelated files and hurt classification quality.
+        use_cache = strategy.name != "custom"
 
         results: dict[str, ClassificationResult] = {}
 
         # Step 1: deterministic (no AI)
         needs_ai: list[DriveFile] = []
         for f in files:
-            cached = self._cache.get(f)
-            if cached:
-                results[f.id] = ClassificationResult(
-                    file_id=f.id,
-                    target_path=cached.target_path,
-                    confidence=cached.confidence,
-                    reasoning=cached.reasoning,
-                    provider=cached.provider,
-                )
-                continue
+            if use_cache:
+                cached = self._cache.get(f)
+                if cached:
+                    results[f.id] = ClassificationResult(
+                        file_id=f.id,
+                        target_path=cached.target_path,
+                        confidence=cached.confidence,
+                        reasoning=cached.reasoning,
+                        provider=cached.provider,
+                    )
+                    continue
             det = strategy.classify_without_ai(f)
             if det is not None:
                 results[f.id] = det
-                self._cache.set(f, det)
+                if use_cache:
+                    self._cache.set(f, det)
             else:
                 needs_ai.append(f)
 
@@ -79,7 +84,8 @@ class AICascade:
                 for f, res in zip(batch, batch_results):
                     if res.confidence >= settings.ollama_confidence_threshold:
                         results[f.id] = res
-                        self._cache.set(f, res)
+                        if use_cache:
+                            self._cache.set(f, res)
                     else:
                         ollama_low.append(f)
                         results[f.id] = res  # provisional
@@ -116,7 +122,8 @@ class AICascade:
                     )
                 if hres.confidence >= settings.haiku_confidence_threshold:
                     results[f.id] = hres
-                    self._cache.set(f, hres)
+                    if use_cache:
+                        self._cache.set(f, hres)
                 else:
                     haiku_low.append(f)
                     results[f.id] = hres
@@ -136,7 +143,8 @@ class AICascade:
             self._cloud_escalations += len(batch)
             for f, ores in zip(batch, batch_results):
                 results[f.id] = ores
-                self._cache.set(f, ores)
+                if use_cache:
+                    self._cache.set(f, ores)
             time.sleep(_CLOUD_INTER_BATCH_SLEEP)
 
         return [results.get(f.id, _fallback(f)) for f in files]

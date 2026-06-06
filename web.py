@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import queue
 import sys
 import threading
@@ -14,6 +15,7 @@ from flask import Flask, Response, jsonify, render_template, request, stream_wit
 app = Flask(__name__)
 
 _ops: dict[str, queue.Queue] = {}
+_structure_lock = threading.Lock()
 
 
 def _new_op() -> tuple[str, queue.Queue]:
@@ -24,42 +26,30 @@ def _new_op() -> tuple[str, queue.Queue]:
 
 
 class _FakeProgress:
-    def __init__(self, q: queue.Queue, total: int):
+    def __init__(self, q: queue.Queue, total: int, interval: int = 50):
         self._q = q
         self._total = total
         self._done = 0
+        self._interval = interval
 
     def update(self, task_id, advance: int = 1):
         self._done += advance
-        if self._done % 100 == 0 or self._done >= self._total:
+        if self._done % self._interval == 0 or self._done >= self._total:
             self._q.put({"type": "progress", "current": self._done, "total": self._total,
-                         "message": f"Classificati {self._done}/{self._total}…"})
+                         "message": f"Elaborati {self._done}/{self._total}…"})
+
+    def advance(self, task_id, advance: int = 1):
+        self.update(task_id, advance)
 
 
 def _build_cascade():
-    from drive_organizer.ai.cascade import AICascade
-    from drive_organizer.ai.ollama_provider import OllamaProvider
-    from drive_organizer.config import settings
+    from drive_organizer.ai.factory import build_cascade
+    return build_cascade()
 
-    if settings.anthropic_api_key:
-        from drive_organizer.ai.haiku_provider import HaikuProvider
-        from drive_organizer.ai.opus_provider import OpusProvider
-        haiku, opus = HaikuProvider(), OpusProvider()
-    elif settings.gemini_api_key:
-        from drive_organizer.ai.gemini_provider import GeminiFlashProvider, GeminiProProvider
-        haiku, opus = GeminiFlashProvider(), GeminiProProvider()
-    elif settings.deepseek_api_key:
-        from drive_organizer.ai.deepseek_provider import DeepSeekFlashProvider, DeepSeekProProvider
-        haiku, opus = DeepSeekFlashProvider(), DeepSeekProProvider()
-    elif settings.dashscope_api_key:
-        from drive_organizer.ai.qwen_provider import QwenFlashProvider, QwenProProvider
-        haiku, opus = QwenFlashProvider(), QwenProProvider()
-    else:
-        from drive_organizer.ai.haiku_provider import HaikuProvider
-        from drive_organizer.ai.opus_provider import OpusProvider
-        haiku, opus = HaikuProvider(), OpusProvider()
 
-    return AICascade(ollama=OllamaProvider(), haiku=haiku, opus=opus)
+def _sanitize_key(v: str) -> str:
+    """Strip newlines/CR to prevent .env injection."""
+    return v.replace("\n", "").replace("\r", "").strip()
 
 
 @app.route("/")
@@ -180,7 +170,11 @@ def api_organize():
                     folders = taxonomy.get("folders", [])
                     q.put({"type": "ok", "message": f"Struttura AI caricata: {', '.join(folders)}"})
                 elif taxonomy_file:
-                    taxonomy = json.loads(Path(taxonomy_file).read_text())
+                    _tax_dir = (Path(__file__).parent / "taxonomies").resolve()
+                    _tax_path = (Path(__file__).parent / taxonomy_file).resolve()
+                    if not str(_tax_path).startswith(str(_tax_dir)):
+                        raise ValueError(f"Invalid taxonomy path: {taxonomy_file}")
+                    taxonomy = json.loads(_tax_path.read_text(encoding="utf-8"))
                 else:
                     q.put({"type": "info", "message": "AI interpreta la struttura desiderata…"})
                     if settings.gemini_api_key and not settings.anthropic_api_key:
@@ -222,8 +216,9 @@ def api_organize():
             from drive_organizer.executor import PlanExecutor
             executor = PlanExecutor(client, email)
             manifest = executor.execute(plan)
-            global _structure_cache
-            _structure_cache = None  # invalidate so next structure view reflects new state
+            with _structure_lock:
+                global _structure_cache
+                _structure_cache = None
             q.put({"type": "ok", "message": f"Completato! {len(manifest.entries)} file spostati.", "done": True})
 
         except Exception as e:
@@ -261,12 +256,18 @@ def api_duplicates():
             plan = find_duplicates(files)
 
             groups = [
-                {"files": [{"name": f.name, "size": f.size} for f in g.files], "count": len(g.files)}
+                {
+                    "files": [{"name": f.name, "size": f.size, "owned": f.owned_by_me} for f in g.files],
+                    "count": len(g.files),
+                    "archivable": sum(1 for f in g.to_archive if f.owned_by_me and f.can_move),
+                    "reason": g.reason,
+                }
                 for g in plan.groups[:100]
             ]
+            archivable_total = sum(1 for f in plan.files_to_archive if f.owned_by_me and f.can_move)
             q.put({"type": "preview", "groups": groups, "total_groups": len(plan.groups),
-                   "total_files": len(plan.files_to_archive),
-                   "message": f"{len(plan.groups)} gruppi trovati ({len(plan.files_to_archive)} file da archiviare)."})
+                   "total_files": archivable_total,
+                   "message": f"{len(plan.groups)} gruppi trovati ({archivable_total} file archiviabili)."})
 
             if not apply:
                 q.put({"type": "ok", "message": "Anteprima pronta.", "done": True})
@@ -355,8 +356,9 @@ _structure_cache: dict | None = None
 @app.route("/api/structure/current")
 def api_structure_current():
     global _structure_cache
-    if _structure_cache:
-        return jsonify(_structure_cache)
+    with _structure_lock:
+        if _structure_cache:
+            return jsonify(_structure_cache)
 
     try:
         from drive_organizer.auth.google_auth import get_drive_service
@@ -433,7 +435,8 @@ def api_structure_current():
             tree.append({"name": folder, "count": count, "types": top_types, "children": children})
 
         result = {"total_files": len(files), "total_folders": len(folders), "tree": tree}
-        _structure_cache = result
+        with _structure_lock:
+            _structure_cache = result
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -462,28 +465,32 @@ def api_analyze():
             files, _ = client.scan_all_files()
             q.put({"type": "ok", "message": f"{len(files)} file trovati."})
 
-            # Build top-folder list from cached structure or quick scan
+            # Build top-folder list — reuse structure cache if available
             q.put({"type": "info", "message": "Analisi struttura esistente..."})
-            folders: dict[str, dict] = {}
-            page_token = None
-            while True:
-                resp = svc.files().list(
-                    q="mimeType='application/vnd.google-apps.folder' and trashed=false",
-                    fields="nextPageToken,files(id,name,parents)",
-                    pageSize=1000, supportsAllDrives=True, includeItemsFromAllDrives=True,
-                    pageToken=page_token,
-                ).execute()
-                for f in resp.get("files", []):
-                    folders[f["id"]] = {"name": f["name"], "parents": f.get("parents", [])}
-                page_token = resp.get("nextPageToken")
-                if not page_token:
-                    break
-
-            # Get top-level folder names
-            top_folders = [
-                info["name"] for fid, info in folders.items()
-                if not info["parents"] or info["parents"][0] not in folders
-            ]
+            with _structure_lock:
+                cached_tree = _structure_cache
+            if cached_tree:
+                top_folders = [n["name"] for n in cached_tree.get("tree", [])]
+                q.put({"type": "info", "message": f"Struttura caricata da cache ({len(top_folders)} cartelle top-level)."})
+            else:
+                folders: dict[str, dict] = {}
+                page_token = None
+                while True:
+                    resp = svc.files().list(
+                        q="mimeType='application/vnd.google-apps.folder' and trashed=false",
+                        fields="nextPageToken,files(id,name,parents)",
+                        pageSize=1000, supportsAllDrives=True, includeItemsFromAllDrives=True,
+                        pageToken=page_token,
+                    ).execute()
+                    for f in resp.get("files", []):
+                        folders[f["id"]] = {"name": f["name"], "parents": f.get("parents", [])}
+                    page_token = resp.get("nextPageToken")
+                    if not page_token:
+                        break
+                top_folders = [
+                    info["name"] for fid, info in folders.items()
+                    if not info["parents"] or info["parents"][0] not in folders
+                ]
 
             q.put({"type": "info",
                    "message": f"Invio {min(400, len(files))} nomi file all'AI per analisi..."})
@@ -538,7 +545,8 @@ def api_taxonomy_save():
 @app.route("/api/structure/cache/clear", methods=["POST"])
 def api_structure_cache_clear():
     global _structure_cache
-    _structure_cache = None
+    with _structure_lock:
+        _structure_cache = None
     return jsonify({"ok": True})
 
 
@@ -648,17 +656,17 @@ def api_config_save():
 
     updates: dict[str, str] = {}
     if data.get("anthropic_key") and not str(data["anthropic_key"]).endswith("…"):
-        updates["ANTHROPIC_API_KEY"] = data["anthropic_key"]
+        updates["ANTHROPIC_API_KEY"] = _sanitize_key(data["anthropic_key"])
     if data.get("gemini_key") and not str(data["gemini_key"]).endswith("…"):
-        updates["GEMINI_API_KEY"] = data["gemini_key"]
+        updates["GEMINI_API_KEY"] = _sanitize_key(data["gemini_key"])
     if data.get("deepseek_key") and not str(data["deepseek_key"]).endswith("…"):
-        updates["DEEPSEEK_API_KEY"] = data["deepseek_key"]
+        updates["DEEPSEEK_API_KEY"] = _sanitize_key(data["deepseek_key"])
     if data.get("dashscope_key") and not str(data["dashscope_key"]).endswith("…"):
-        updates["DASHSCOPE_API_KEY"] = data["dashscope_key"]
+        updates["DASHSCOPE_API_KEY"] = _sanitize_key(data["dashscope_key"])
     if data.get("ollama_url"):
-        updates["OLLAMA_BASE_URL"] = data["ollama_url"]
+        updates["OLLAMA_BASE_URL"] = _sanitize_key(data["ollama_url"])
     if data.get("ollama_model"):
-        updates["OLLAMA_MODEL"] = data["ollama_model"]
+        updates["OLLAMA_MODEL"] = _sanitize_key(data["ollama_model"])
 
     new_lines, updated = [], set()
     for line in lines:
@@ -673,7 +681,96 @@ def api_config_save():
             new_lines.append(f"{key}={val}")
 
     env_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+
+    # Reload live settings so the change takes effect without restart
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(env_path, override=True)
+        from drive_organizer.config import settings
+        _env_to_attr = {
+            "ANTHROPIC_API_KEY": "anthropic_api_key",
+            "GEMINI_API_KEY": "gemini_api_key",
+            "DEEPSEEK_API_KEY": "deepseek_api_key",
+            "DASHSCOPE_API_KEY": "dashscope_api_key",
+            "OLLAMA_BASE_URL": "ollama_base_url",
+            "OLLAMA_MODEL": "ollama_model",
+        }
+        for env_key, attr in _env_to_attr.items():
+            val = os.environ.get(env_key)
+            if val is not None:
+                setattr(settings, attr, val)
+    except Exception:
+        pass  # non-critical — server restart still works
+
     return jsonify({"ok": True})
+
+
+@app.route("/api/rename", methods=["POST"])
+def api_rename():
+    data = request.json or {}
+    apply = data.get("apply", False)
+    limit = int(data.get("limit", 0))
+    offset = int(data.get("offset", 0))
+    account = data.get("account") or None
+
+    op_id, q = _new_op()
+
+    def run():
+        try:
+            from drive_organizer.auth.google_auth import get_authenticated_email, get_drive_service
+            from drive_organizer.drive.client import DriveClient
+            from drive_organizer.renamer import FileRenamer
+
+            q.put({"type": "info", "message": "Connessione Google Drive…"})
+            svc = get_drive_service(account)
+            email = get_authenticated_email(svc)
+            client = DriveClient(svc)
+            q.put({"type": "ok", "message": f"Connesso come: {email}"})
+
+            renamer = FileRenamer(svc)
+            if not renamer.health_check():
+                q.put({"type": "error",
+                       "message": "Ollama non raggiungibile. La rinomina usa solo Ollama locale.",
+                       "done": True})
+                return
+
+            q.put({"type": "info", "message": "Scansione file…"})
+            files, _ = client.scan_all_files()
+            movable = [f for f in files if not f.is_folder and not f.is_shortcut and f.owned_by_me]
+            if offset:
+                movable = movable[offset:]
+            if limit:
+                movable = movable[:limit]
+            q.put({"type": "ok", "message": f"{len(movable)} file da analizzare."})
+
+            q.put({"type": "info", "message": f"Analisi nomi con Ollama ({renamer._model})…"})
+            prog = _FakeProgress(q, len(movable), interval=10)
+            plan = renamer.build_plan(movable, prog, 0)
+
+            active = [op for op in plan.operations if not op.skipped]
+            preview = [
+                {"old_name": op.old_name, "new_name": op.new_name,
+                 "confidence": round(op.confidence, 2), "reasoning": op.reasoning}
+                for op in active[:300]
+            ]
+            q.put({"type": "preview", "renames": preview, "total": len(active),
+                   "message": f"Piano: {len(active)} file da rinominare."})
+
+            if not apply:
+                q.put({"type": "ok", "message": "Anteprima pronta. Premi Applica per procedere.", "done": True})
+                return
+
+            q.put({"type": "info", "message": f"Rinomina in corso ({len(active)} file)…"})
+            from drive_organizer.rename_executor import RenameExecutor
+            executor = RenameExecutor(client, email)
+            manifest = executor.execute(plan)
+            q.put({"type": "ok", "message": f"Completato! {len(manifest.entries)} file rinominati.", "done": True})
+
+        except Exception as e:
+            q.put({"type": "error", "message": str(e), "done": True})
+
+    threading.Thread(target=run, daemon=True).start()
+    return jsonify({"op_id": op_id})
 
 
 if __name__ == "__main__":

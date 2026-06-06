@@ -174,6 +174,7 @@ tr:hover td{background:#4a9eff08}
   <div class="tab active" onclick="switchTab('organizza')">Organizza</div>
   <div class="tab" onclick="switchTab('struttura')">Struttura</div>
   <div class="tab" onclick="switchTab('duplicati')">Duplicati</div>
+  <div class="tab" onclick="switchTab('rinomina')">Rinomina</div>
   <div class="tab" onclick="switchTab('rollback')">Rollback</div>
   <div class="tab" onclick="switchTab('impostazioni')">⚙ Impostazioni</div>
 </nav>
@@ -458,6 +459,59 @@ tr:hover td{background:#4a9eff08}
     </div>
   </section>
 
+  <!-- ── RINOMINA ──────────────────────────────────────────────── -->
+  <section class="section" id="tab-rinomina">
+    <div class="card">
+      <div class="card-title">Rinomina intelligente</div>
+      <p style="font-size:13px;color:#64748b;margin-bottom:16px;line-height:1.6">
+        Analizza i nomi dei file e suggerisce versioni più chiare e descrittive in italiano.<br>
+        <strong style="color:#22c55e">Privacy garantita</strong> — usa solo Ollama locale, il contenuto non raggiunge mai il cloud.
+      </p>
+      <div class="options-row">
+        <div class="opt-group" style="flex-direction:row;align-items:center;gap:8px">
+          <label style="white-space:nowrap;font-size:12px;color:#64748b">File da analizzare (0=tutti)</label>
+          <input type="number" id="renameLimit" value="0" min="0"
+            style="background:#0f1117;border:1px solid #2d3148;border-radius:8px;color:#e2e8f0;font-size:13px;padding:8px 10px;width:90px">
+        </div>
+        <div class="opt-group" style="flex-direction:row;align-items:center;gap:8px">
+          <label style="white-space:nowrap;font-size:12px;color:#64748b">Offset</label>
+          <input type="number" id="renameOffset" value="0" min="0"
+            style="background:#0f1117;border:1px solid #2d3148;border-radius:8px;color:#e2e8f0;font-size:13px;padding:8px 10px;width:90px">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btnRenamePreview" onclick="startRename(false)">
+          👁 Anteprima
+        </button>
+        <button class="btn btn-success" id="btnRenameApply" onclick="startRename(true)" disabled>
+          ✅ Applica
+        </button>
+      </div>
+    </div>
+
+    <div class="card" id="renamePreviewCard" style="display:none">
+      <div class="preview-header">
+        <div class="card-title" style="margin:0">Piano rinomina</div>
+        <span class="preview-count" id="renameCount"></span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Nome attuale</th><th>Nuovo nome</th><th>Conf.</th></tr></thead>
+          <tbody id="renameBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Log</div>
+      <div class="progress-wrap" id="renameProgress">
+        <div class="progress-bar"><div class="progress-fill" id="renameProgressFill"></div></div>
+        <div class="progress-text" id="renameProgressText"></div>
+      </div>
+      <div class="log-panel visible" id="renameLog"></div>
+    </div>
+  </section>
+
   <!-- ── ROLLBACK ───────────────────────────────────────────────── -->
   <section class="section" id="tab-rollback">
     <div class="card">
@@ -478,7 +532,7 @@ tr:hover td{background:#4a9eff08}
 // ── Tab switching ────────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    const names=['organizza','struttura','duplicati','rollback','impostazioni'];
+    const names=['organizza','struttura','duplicati','rinomina','rollback','impostazioni'];
     t.classList.toggle('active', names[i]===name);
   });
   document.querySelectorAll('.section').forEach(s=>{
@@ -651,13 +705,69 @@ function renderDuplicates(data){
   total.textContent=data.total_groups;
   container.innerHTML=data.groups.map(g=>`
     <div class="dup-group">
-      <div class="dup-group-header">⚠ ${g.count} copie</div>
+      <div class="dup-group-header">
+        ⚠ ${g.count} copie
+        ${g.archivable<g.count-1?`<span style="font-size:10px;color:#64748b;font-weight:400;margin-left:8px">(${g.archivable} archiviabili)</span>`:''}
+        <span style="font-size:10px;color:#64748b;font-weight:400;margin-left:8px">${g.reason==='md5'?'contenuto identico':'nome simile'}</span>
+      </div>
       ${g.files.map(f=>`
         <div class="dup-file">
-          <span>${escHtml(f.name)}</span>
+          <span style="${!f.owned?'opacity:.5':''}">${escHtml(f.name)}${!f.owned?' <span style="font-size:10px;color:#64748b">(non tuo)</span>':''}</span>
           <span style="color:#64748b">${f.size?Math.round(f.size/1024)+' KB':''}</span>
         </div>`).join('')}
     </div>`).join('');
+}
+
+// ── Rename ────────────────────────────────────────────────────────────────────
+async function startRename(apply){
+  const limit=parseInt(document.getElementById('renameLimit').value)||0;
+  const offset=parseInt(document.getElementById('renameOffset').value)||0;
+  const logEl=document.getElementById('renameLog');
+  const btnPrev=document.getElementById('btnRenamePreview');
+  const btnApply=document.getElementById('btnRenameApply');
+  const progressEl=document.getElementById('renameProgress');
+  const progressFill=document.getElementById('renameProgressFill');
+  const progressText=document.getElementById('renameProgressText');
+  btnPrev.disabled=true;
+  btnApply.disabled=true;
+  document.getElementById('renamePreviewCard').style.display='none';
+
+  const r=await fetch('/api/rename',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({apply,limit,offset})
+  });
+  const {op_id}=await r.json();
+
+  startStream(op_id, logEl,
+    (msg)=>{
+      btnPrev.disabled=false;
+      if(msg.type!=='error') btnApply.disabled=false;
+    },
+    (preview)=>{
+      renderRenamePreview(preview);
+      if(!apply) btnApply.disabled=false;
+    },
+    progressEl, progressFill, progressText
+  );
+}
+
+function renderRenamePreview(data){
+  const card=document.getElementById('renamePreviewCard');
+  const body=document.getElementById('renameBody');
+  const count=document.getElementById('renameCount');
+  card.style.display='block';
+  count.textContent=`${data.total} file`;
+  body.innerHTML=(data.renames||[]).map(r=>{
+    const c=r.confidence;
+    const cls=c>=0.8?'conf-high':c>=0.6?'conf-mid':'conf-low';
+    const changed=r.old_name!==r.new_name;
+    return `<tr>
+      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${changed?'#94a3b8':'#64748b'}">${escHtml(r.old_name)}</td>
+      <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${changed?'#e2e8f0':'#64748b'}">${escHtml(r.new_name)}</td>
+      <td><span class="conf ${cls}">${Math.round(c*100)}%</span></td>
+    </tr>`;
+  }).join('');
 }
 
 // ── Rollback ──────────────────────────────────────────────────────────────────

@@ -46,38 +46,15 @@ def _check_credentials():
 
 
 def _build_cascade():
-    from drive_organizer.ai.cascade import AICascade
-    from drive_organizer.ai.ollama_provider import OllamaProvider
+    from drive_organizer.ai.factory import build_cascade
     from drive_organizer.config import settings
-
-    if settings.anthropic_api_key:
-        from drive_organizer.ai.haiku_provider import HaikuProvider
-        from drive_organizer.ai.opus_provider import OpusProvider
-        haiku = HaikuProvider()
-        opus = OpusProvider()
-    elif settings.gemini_api_key:
-        from drive_organizer.ai.gemini_provider import GeminiFlashProvider, GeminiProProvider
-        haiku = GeminiFlashProvider()
-        opus = GeminiProProvider()
-    elif settings.deepseek_api_key:
-        from drive_organizer.ai.deepseek_provider import DeepSeekFlashProvider, DeepSeekProProvider
-        haiku = DeepSeekFlashProvider()
-        opus = DeepSeekProProvider()
-    elif settings.dashscope_api_key:
-        from drive_organizer.ai.qwen_provider import QwenFlashProvider, QwenProProvider
-        haiku = QwenFlashProvider()
-        opus = QwenProProvider()
-    else:
+    if not any([settings.anthropic_api_key, settings.gemini_api_key,
+                settings.deepseek_api_key, settings.dashscope_api_key]):
         console.print(
             "[yellow]Avviso: nessuna API key cloud configurata.[/yellow]\n"
             "Solo Ollama locale verrà usato. Configura una chiave in [bold].env[/bold] per la cascade completa."
         )
-        from drive_organizer.ai.haiku_provider import HaikuProvider
-        from drive_organizer.ai.opus_provider import OpusProvider
-        haiku = HaikuProvider()
-        opus = OpusProvider()
-
-    return AICascade(ollama=OllamaProvider(), haiku=haiku, opus=opus)
+    return build_cascade()
 
 
 @click.group()
