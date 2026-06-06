@@ -50,20 +50,27 @@ def _build_cascade():
     from drive_organizer.ai.ollama_provider import OllamaProvider
     from drive_organizer.config import settings
 
-    if settings.gemini_api_key and not settings.anthropic_api_key:
-        from drive_organizer.ai.gemini_provider import GeminiFlashProvider, GeminiProProvider
-        haiku = GeminiFlashProvider()
-        opus = GeminiProProvider()
-    elif settings.anthropic_api_key:
+    if settings.anthropic_api_key:
         from drive_organizer.ai.haiku_provider import HaikuProvider
         from drive_organizer.ai.opus_provider import OpusProvider
         haiku = HaikuProvider()
         opus = OpusProvider()
+    elif settings.gemini_api_key:
+        from drive_organizer.ai.gemini_provider import GeminiFlashProvider, GeminiProProvider
+        haiku = GeminiFlashProvider()
+        opus = GeminiProProvider()
+    elif settings.deepseek_api_key:
+        from drive_organizer.ai.deepseek_provider import DeepSeekFlashProvider, DeepSeekProProvider
+        haiku = DeepSeekFlashProvider()
+        opus = DeepSeekProProvider()
+    elif settings.dashscope_api_key:
+        from drive_organizer.ai.qwen_provider import QwenFlashProvider, QwenProProvider
+        haiku = QwenFlashProvider()
+        opus = QwenProProvider()
     else:
         console.print(
-            "[yellow]Avviso: nessuna API key configurata (ANTHROPIC_API_KEY o GEMINI_API_KEY).[/yellow]\n"
-            "L'escalation cloud è disabilitata — solo Ollama locale verrà usato.\n"
-            "Configura una chiave in [bold].env[/bold] per abilitare la cascade completa."
+            "[yellow]Avviso: nessuna API key cloud configurata.[/yellow]\n"
+            "Solo Ollama locale verrà usato. Configura una chiave in [bold].env[/bold] per la cascade completa."
         )
         from drive_organizer.ai.haiku_provider import HaikuProvider
         from drive_organizer.ai.opus_provider import OpusProvider

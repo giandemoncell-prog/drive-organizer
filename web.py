@@ -125,6 +125,7 @@ def api_stream(op_id):
                     break
             except queue.Empty:
                 yield "data: {\"type\":\"ping\"}\n\n"
+        _ops.pop(op_id, None)
 
     return Response(
         stream_with_context(generate()),
@@ -140,6 +141,7 @@ def api_organize():
     apply = data.get("apply", False)
     custom_prompt = data.get("custom_prompt", "")
     taxonomy_file = data.get("taxonomy_file")
+    taxonomy_json = data.get("taxonomy_json")  # inline taxonomy dict from UI analysis
     year_only = data.get("year_only", False)
     account = data.get("account") or None
 
@@ -173,9 +175,12 @@ def api_organize():
             elif strategy == "custom":
                 from drive_organizer.strategies.custom import CustomNLStrategy
                 from drive_organizer.config import settings
-                if taxonomy_file:
-                    import json as _j
-                    taxonomy = _j.loads(Path(taxonomy_file).read_text())
+                if taxonomy_json:
+                    taxonomy = taxonomy_json
+                    folders = taxonomy.get("folders", [])
+                    q.put({"type": "ok", "message": f"Struttura AI caricata: {', '.join(folders)}"})
+                elif taxonomy_file:
+                    taxonomy = json.loads(Path(taxonomy_file).read_text())
                 else:
                     q.put({"type": "info", "message": "AI interpreta la struttura desiderata…"})
                     if settings.gemini_api_key and not settings.anthropic_api_key:
@@ -217,6 +222,8 @@ def api_organize():
             from drive_organizer.executor import PlanExecutor
             executor = PlanExecutor(client, email)
             manifest = executor.execute(plan)
+            global _structure_cache
+            _structure_cache = None  # invalidate so next structure view reflects new state
             q.put({"type": "ok", "message": f"Completato! {len(manifest.entries)} file spostati.", "done": True})
 
         except Exception as e:
