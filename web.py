@@ -15,13 +15,32 @@ from flask import Flask, Response, jsonify, render_template, request, stream_wit
 app = Flask(__name__)
 
 _ops: dict[str, queue.Queue] = {}
+_ops_ts: dict[str, float] = {}   # creation timestamp for TTL cleanup
 _structure_lock = threading.Lock()
+_structure_loading = False        # sentinel to avoid double-scan
+
+
+def _ops_cleanup():
+    """Background thread: evict ops older than 30 min that were never streamed."""
+    import time
+    while True:
+        time.sleep(300)
+        cutoff = time.monotonic() - 1800
+        stale = [oid for oid, ts in list(_ops_ts.items()) if ts < cutoff]
+        for oid in stale:
+            _ops.pop(oid, None)
+            _ops_ts.pop(oid, None)
+
+
+threading.Thread(target=_ops_cleanup, daemon=True, name="ops-cleanup").start()
 
 
 def _new_op() -> tuple[str, queue.Queue]:
+    import time
     op_id = uuid.uuid4().hex
     q: queue.Queue = queue.Queue()
     _ops[op_id] = q
+    _ops_ts[op_id] = time.monotonic()
     return op_id, q
 
 
@@ -265,9 +284,18 @@ def api_duplicates():
                 for g in plan.groups[:100]
             ]
             archivable_total = sum(1 for f in plan.files_to_archive if f.owned_by_me and f.can_move)
+            not_owned = sum(1 for g in plan.groups for f in g.to_archive if not f.owned_by_me)
+            not_movable = sum(1 for g in plan.groups for f in g.to_archive if f.owned_by_me and not f.can_move)
             q.put({"type": "preview", "groups": groups, "total_groups": len(plan.groups),
                    "total_files": archivable_total,
-                   "message": f"{len(plan.groups)} gruppi trovati ({archivable_total} file archiviabili)."})
+                   "not_owned": not_owned, "not_movable": not_movable,
+                   "message": (
+                       f"{len(plan.groups)} gruppi trovati — "
+                       f"{archivable_total} archiviabili"
+                       + (f", {not_owned} non tuoi" if not_owned else "")
+                       + (f", {not_movable} non spostabili" if not_movable else "")
+                       + "."
+                   )})
 
             if not apply:
                 q.put({"type": "ok", "message": "Anteprima pronta.", "done": True})
@@ -317,13 +345,14 @@ def api_rollbacks():
             "email": m.drive_user_email,
         } for m in mgr.list_available()])
     except Exception as e:
-        return jsonify([])
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/rollback", methods=["POST"])
 def api_rollback():
     data = request.json or {}
     run_id = data.get("run_id")
+    account = data.get("account") or None
     op_id, q = _new_op()
 
     def run():
@@ -332,7 +361,7 @@ def api_rollback():
             from drive_organizer.drive.client import DriveClient
             from drive_organizer.rollback import RollbackManager
 
-            svc = get_drive_service()
+            svc = get_drive_service(account)
             client = DriveClient(svc)
             mgr = RollbackManager(client)
             manifests = mgr.list_available()
@@ -355,10 +384,13 @@ _structure_cache: dict | None = None
 
 @app.route("/api/structure/current")
 def api_structure_current():
-    global _structure_cache
+    global _structure_cache, _structure_loading
     with _structure_lock:
         if _structure_cache:
             return jsonify(_structure_cache)
+        if _structure_loading:
+            return jsonify({"error": "scan in corso, riprova tra qualche secondo"}), 503
+        _structure_loading = True
 
     try:
         from drive_organizer.auth.google_auth import get_drive_service
@@ -437,8 +469,11 @@ def api_structure_current():
         result = {"total_files": len(files), "total_folders": len(folders), "tree": tree}
         with _structure_lock:
             _structure_cache = result
+            _structure_loading = False
         return jsonify(result)
     except Exception as e:
+        with _structure_lock:
+            _structure_loading = False
         return jsonify({"error": str(e)}), 500
 
 
@@ -554,6 +589,7 @@ def api_structure_cache_clear():
 def api_structure_proposed():
     data = request.json or {}
     strategy = data.get("strategy", "type")
+    account = data.get("account") or None
     op_id, q = _new_op()
 
     def run():
@@ -564,7 +600,7 @@ def api_structure_proposed():
             from drive_organizer.planner import OrganizationPlanner
 
             q.put({"type": "info", "message": "Connessione Drive..."})
-            svc = get_drive_service()
+            svc = get_drive_service(account)
             email = get_authenticated_email(svc)
             client = DriveClient(svc)
 
