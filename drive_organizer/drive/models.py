@@ -59,6 +59,7 @@ class OrganizationPlan(BaseModel):
 
 
 class RollbackManifest(BaseModel):
+    schema_version: int = 1
     run_id: str
     strategy: str
     started_at: datetime
@@ -93,6 +94,7 @@ class RenameManifestEntry(BaseModel):
 
 
 class RenameManifest(BaseModel):
+    schema_version: int = 1
     run_id: str
     started_at: datetime
     completed_at: datetime | None = None

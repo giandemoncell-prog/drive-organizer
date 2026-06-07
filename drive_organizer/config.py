@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
 
     gemini_api_key: str = ""
-    gemini_flash_model: str = "gemini-2.0-flash"
+    gemini_flash_model: str = "gemini-2.5-flash"
     gemini_pro_model: str = "gemini-2.5-pro"
 
     deepseek_api_key: str = ""
@@ -26,6 +26,13 @@ class Settings(BaseSettings):
     ollama_confidence_threshold: float = Field(default=0.75, ge=0.0, le=1.0)
     haiku_confidence_threshold: float = Field(default=0.80, ge=0.0, le=1.0)
     max_cloud_escalations: int = 200
+    max_cloud_escalations_pct: float = Field(default=0.20, ge=0.0, le=1.0)
+
+    duplicate_exclude_folder_patterns: list[str] = [
+        "analytics_snapshot",
+        "trackers_snapshot",
+        "Workflow Backups",
+    ]
 
     credentials_path: str = "credentials.json"
     tokens_dir: str = "tokens"

@@ -98,11 +98,20 @@ class DuplicatePlan:
         return sum(1 for g in self.groups if g.excepted)
 
 
-def find_duplicates(files: list[DriveFile]) -> DuplicatePlan:
+def find_duplicates(
+    files: list[DriveFile],
+    exclude_folder_ids: set[str] | None = None,
+) -> DuplicatePlan:
     """
     Trova duplicati esatti (md5) e per nome normalizzato.
     Restituisce un piano con i gruppi trovati.
+
+    exclude_folder_ids: set di folder ID da escludere (es. cartelle analytics BVM, Workflow Backups n8n).
     """
+    _exclude = exclude_folder_ids or set()
+    if _exclude:
+        files = [f for f in files if not any(p in _exclude for p in f.parents)]
+
     groups: list[DuplicateGroup] = []
     group_id = 0
 

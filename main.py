@@ -221,7 +221,7 @@ def organize(account, strategy, custom_prompt, taxonomy_file, apply, yes, ollama
         files, folder_map = client.scan_all_files()
     console.print(f"[green]{len(files)} file trovati.[/green]")
 
-    strat = _build_strategy(strategy, custom_prompt, no_haiku, taxonomy_file)
+    strat = _build_strategy(strategy, custom_prompt, no_haiku, taxonomy_file, year_only=year_only)
 
     console.print(f"\n[bold]Classificazione con strategia '{strategy}'…[/bold]")
     cascade = None
@@ -418,10 +418,19 @@ def duplicates(account, apply, archive_folder):
     console.print("[bold]Scansione file…[/bold]")
     with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=console) as prog:
         prog.add_task("Lettura Drive…")
-        files, _ = client.scan_all_files()
+        files, folder_map = client.scan_all_files()
+
+    from drive_organizer.config import settings as _settings
+    exclude_ids = {
+        fid for fid, name in folder_map.items()
+        if any(p in name for p in _settings.duplicate_exclude_folder_patterns)
+    }
+    excluded_count = sum(1 for f in files if any(p in f.parents for p in exclude_ids))
+    if exclude_ids:
+        console.print(f"[dim]Escluse {len(exclude_ids)} cartelle ({excluded_count} file) dai pattern configurati.[/dim]")
 
     console.print(f"[green]{len(files)} file trovati.[/green] Ricerca duplicati in corso…")
-    plan = find_duplicates(files)
+    plan = find_duplicates(files, exclude_folder_ids=exclude_ids)
 
     print_duplicate_preview(console, plan)
 
@@ -530,13 +539,13 @@ def rollback(account, run_id, yes, rollback_all):
     mgr.execute_rollback(chosen)
 
 
-def _build_strategy(name: str, custom_prompt: str | None, no_haiku: bool, taxonomy_file: str | None = None):
+def _build_strategy(name: str, custom_prompt: str | None, no_haiku: bool, taxonomy_file: str | None = None, year_only: bool = False):
     if name == "type":
         from drive_organizer.strategies.by_type import FileTypeStrategy
         return FileTypeStrategy()
     elif name == "date":
         from drive_organizer.strategies.by_date import DateStrategy
-        return DateStrategy()
+        return DateStrategy(year_only=year_only)
     elif name == "project":
         from drive_organizer.strategies.by_project import ProjectTopicStrategy
         return ProjectTopicStrategy()

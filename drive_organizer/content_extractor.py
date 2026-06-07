@@ -5,8 +5,8 @@ Content is never passed to cloud APIs.
 from __future__ import annotations
 
 import atexit
+import concurrent.futures
 import io
-import os
 import tempfile
 from pathlib import Path
 
@@ -25,15 +25,33 @@ def _cleanup_all():
 atexit.register(_cleanup_all)
 
 
-def extract_text_preview(service, file_id: str, mime_type: str, max_chars: int = 500) -> str:
-    """Download file temporarily and extract text preview. Cleaned up immediately."""
+def extract_text_preview(
+    service,
+    file_id: str,
+    mime_type: str,
+    max_chars: int = 500,
+    timeout_sec: int = 30,
+) -> str:
+    """Download file temporarily and extract text preview. Cleaned up immediately.
+
+    Runs in a thread with a hard timeout so a slow/hung download never blocks the caller.
+    """
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(_do_download, service, file_id, mime_type, max_chars)
+        try:
+            return future.result(timeout=timeout_sec)
+        except concurrent.futures.TimeoutError:
+            return ""
+        except Exception:
+            return ""
+
+
+def _do_download(service, file_id: str, mime_type: str, max_chars: int) -> str:
     tmp_dir = tempfile.mkdtemp()
     _TEMP_DIRS.append(tmp_dir)
-    tmp_path = Path(tmp_dir) / "content"
     try:
         if mime_type.startswith("application/vnd.google-apps."):
-            export_mime = "text/plain"
-            req = service.files().export_media(fileId=file_id, mimeType=export_mime)
+            req = service.files().export_media(fileId=file_id, mimeType="text/plain")
         else:
             req = service.files().get_media(fileId=file_id)
 

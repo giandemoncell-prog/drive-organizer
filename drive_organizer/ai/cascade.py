@@ -48,106 +48,117 @@ class AICascade:
         # would conflate unrelated files and hurt classification quality.
         use_cache = strategy.name != "custom"
 
+        # Adaptive cap: at least max_cloud_escalations, but scales to 20% of file count
+        # so large Drives don't hit the ceiling prematurely.
+        _effective_cap = max(
+            settings.max_cloud_escalations,
+            int(len(files) * settings.max_cloud_escalations_pct),
+        )
+
         results: dict[str, ClassificationResult] = {}
 
-        # Step 1: deterministic (no AI)
-        needs_ai: list[DriveFile] = []
-        for f in files:
-            if use_cache:
-                cached = self._cache.get(f)
-                if cached:
-                    results[f.id] = ClassificationResult(
-                        file_id=f.id,
-                        target_path=cached.target_path,
-                        confidence=cached.confidence,
-                        reasoning=cached.reasoning,
-                        provider=cached.provider,
-                    )
-                    continue
-            det = strategy.classify_without_ai(f)
-            if det is not None:
-                results[f.id] = det
+        try:
+            # Step 1: deterministic (no AI)
+            needs_ai: list[DriveFile] = []
+            for f in files:
                 if use_cache:
-                    self._cache.set(f, det)
-            else:
-                needs_ai.append(f)
-
-        if not needs_ai:
-            return [results.get(f.id, _fallback(f)) for f in files]
-
-        # Step 2: Ollama (skip entirely if not reachable to avoid per-file timeouts)
-        ollama_low: list[DriveFile] = []
-        if self._ollama.health_check():
-            for batch in _batches(needs_ai, _BATCH_SIZE):
-                reqs = [build_request(f) for f in batch]
-                batch_results = self._ollama.classify_batch(reqs, hint, allowed)
-                for f, res in zip(batch, batch_results):
-                    if res.confidence >= settings.ollama_confidence_threshold:
-                        results[f.id] = res
-                        if use_cache:
-                            self._cache.set(f, res)
-                    else:
-                        ollama_low.append(f)
-                        results[f.id] = res  # provisional
-                if progress and task_id is not None:
-                    progress.advance(task_id, len(batch))
-        else:
-            ollama_low = needs_ai
-            if progress and task_id is not None:
-                progress.advance(task_id, len(needs_ai))
-
-        if not ollama_low:
-            return [results.get(f.id, _fallback(f)) for f in files]
-
-        # Step 3: Haiku (metadata only, no content)
-        haiku_low: list[DriveFile] = []
-        for batch in _batches(ollama_low, _BATCH_SIZE):
-            if self._cloud_escalations >= settings.max_cloud_escalations:
-                break
-            reqs = [build_request(f) for f in batch]
-            batch_results = _retry_classify(self._haiku, reqs, hint, allowed)
-            if batch_results is None:
-                continue  # skip this batch only, not all remaining
-            self._cloud_escalations += len(batch)
-            for f, hres in zip(batch, batch_results):
-                ollama_res = results.get(f.id)
-                # Agreement bonus
-                if ollama_res and hres.target_path == ollama_res.target_path:
-                    hres = ClassificationResult(
-                        file_id=hres.file_id,
-                        target_path=hres.target_path,
-                        confidence=min(1.0, hres.confidence + 0.10),
-                        reasoning=hres.reasoning + " [agreement bonus]",
-                        provider=hres.provider,
-                    )
-                if hres.confidence >= settings.haiku_confidence_threshold:
-                    results[f.id] = hres
+                    cached = self._cache.get(f)
+                    if cached:
+                        results[f.id] = ClassificationResult(
+                            file_id=f.id,
+                            target_path=cached.target_path,
+                            confidence=cached.confidence,
+                            reasoning=cached.reasoning,
+                            provider=cached.provider,
+                        )
+                        continue
+                det = strategy.classify_without_ai(f)
+                if det is not None:
+                    results[f.id] = det
                     if use_cache:
-                        self._cache.set(f, hres)
+                        self._cache.set(f, det)
                 else:
-                    haiku_low.append(f)
-                    results[f.id] = hres
-            time.sleep(_CLOUD_INTER_BATCH_SLEEP)
+                    needs_ai.append(f)
 
-        if not haiku_low:
+            if not needs_ai:
+                return [results.get(f.id, _fallback(f)) for f in files]
+
+            # Step 2: Ollama (skip entirely if not reachable to avoid per-file timeouts)
+            ollama_low: list[DriveFile] = []
+            if self._ollama.health_check():
+                for batch in _batches(needs_ai, _BATCH_SIZE):
+                    reqs = [build_request(f) for f in batch]
+                    batch_results = self._ollama.classify_batch(reqs, hint, allowed)
+                    for f, res in zip(batch, batch_results):
+                        if res.confidence >= settings.ollama_confidence_threshold:
+                            results[f.id] = res
+                            if use_cache:
+                                self._cache.set(f, res)
+                        else:
+                            ollama_low.append(f)
+                            results[f.id] = res  # provisional
+                    if progress and task_id is not None:
+                        progress.advance(task_id, len(batch))
+            else:
+                ollama_low = needs_ai
+                if progress and task_id is not None:
+                    progress.advance(task_id, len(needs_ai))
+
+            if not ollama_low:
+                return [results.get(f.id, _fallback(f)) for f in files]
+
+            # Step 3: Haiku (metadata only, no content)
+            haiku_low: list[DriveFile] = []
+            for batch in _batches(ollama_low, _BATCH_SIZE):
+                if self._cloud_escalations >= _effective_cap:
+                    break
+                reqs = [build_request(f) for f in batch]
+                batch_results = _retry_classify(self._haiku, reqs, hint, allowed)
+                if batch_results is None:
+                    continue  # skip this batch only, not all remaining
+                self._cloud_escalations += len(batch)
+                for f, hres in zip(batch, batch_results):
+                    ollama_res = results.get(f.id)
+                    # Agreement bonus
+                    if ollama_res and hres.target_path == ollama_res.target_path:
+                        hres = ClassificationResult(
+                            file_id=hres.file_id,
+                            target_path=hres.target_path,
+                            confidence=min(1.0, hres.confidence + 0.10),
+                            reasoning=hres.reasoning + " [agreement bonus]",
+                            provider=hres.provider,
+                        )
+                    if hres.confidence >= settings.haiku_confidence_threshold:
+                        results[f.id] = hres
+                        if use_cache:
+                            self._cache.set(f, hres)
+                    else:
+                        haiku_low.append(f)
+                        results[f.id] = hres
+                time.sleep(_CLOUD_INTER_BATCH_SLEEP)
+
+            if not haiku_low:
+                return [results.get(f.id, _fallback(f)) for f in files]
+
+            # Step 4: Opus (metadata only, final)
+            for batch in _batches(haiku_low, _BATCH_SIZE):
+                if self._cloud_escalations >= _effective_cap:
+                    break
+                reqs = [build_request(f) for f in batch]
+                batch_results = _retry_classify(self._opus, reqs, hint, allowed)
+                if batch_results is None:
+                    continue
+                self._cloud_escalations += len(batch)
+                for f, ores in zip(batch, batch_results):
+                    results[f.id] = ores
+                    if use_cache:
+                        self._cache.set(f, ores)
+                time.sleep(_CLOUD_INTER_BATCH_SLEEP)
+
             return [results.get(f.id, _fallback(f)) for f in files]
 
-        # Step 4: Opus (metadata only, final)
-        for batch in _batches(haiku_low, _BATCH_SIZE):
-            if self._cloud_escalations >= settings.max_cloud_escalations:
-                break
-            reqs = [build_request(f) for f in batch]
-            batch_results = _retry_classify(self._opus, reqs, hint, allowed)
-            if batch_results is None:
-                continue
-            self._cloud_escalations += len(batch)
-            for f, ores in zip(batch, batch_results):
-                results[f.id] = ores
-                if use_cache:
-                    self._cache.set(f, ores)
-            time.sleep(_CLOUD_INTER_BATCH_SLEEP)
-
-        return [results.get(f.id, _fallback(f)) for f in files]
+        finally:
+            self._cache.save()
 
     def interpret_custom_strategy(self, description: str) -> dict:
         return self._opus.parse_custom_taxonomy(description)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from googleapiclient.errors import HttpError
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
@@ -69,6 +70,7 @@ class RollbackManager:
         ) as progress:
             task = progress.add_task(f"Ripristino {len(entries)} file…", total=len(entries))
             failed = 0
+            deleted = 0
             for entry in reversed(entries):
                 try:
                     self._client.move_file(
@@ -76,10 +78,18 @@ class RollbackManager:
                         new_parent_id=entry.moved_from_parents[0] if entry.moved_from_parents else "root",
                         old_parent_id=entry.moved_to_parent_id,
                     )
+                except HttpError as e:
+                    if e.resp.status == 404:
+                        deleted += 1
+                    else:
+                        failed += 1
                 except Exception:
                     failed += 1
                 progress.advance(task)
 
+        restored = len(entries) - failed - deleted
+        _console.print(f"[green]Rollback completato: {restored}/{len(entries)} file ripristinati.")
+        if deleted:
+            _console.print(f"[yellow]{deleted} file eliminati dal Drive dopo l'organizzazione — non ripristinabili.")
         if failed:
-            _console.print(f"[yellow]{failed} file non ripristinati (già spostati o eliminati).")
-        _console.print(f"[green]Rollback completato: {len(entries) - failed}/{len(entries)} file ripristinati.")
+            _console.print(f"[red]{failed} file non ripristinati per errori API.")

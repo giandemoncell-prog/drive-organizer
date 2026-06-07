@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import time
 from collections import defaultdict
 from typing import Callable
@@ -18,6 +19,20 @@ _FIELDS = (
     "driveId,shortcutDetails,md5Checksum"
     ")"
 )
+
+# Characters forbidden in Windows sync paths (Drive for Desktop compatibility)
+_UNSAFE_CHARS = re.compile(r'[\\/:*?"<>|\x00-\x1f]')
+
+
+def _sanitize_folder_name(name: str) -> str:
+    """Strip chars that break Windows Drive sync and trailing dots/spaces."""
+    sanitized = _UNSAFE_CHARS.sub("_", name).rstrip(". ")
+    return sanitized or "Senza_nome"
+
+
+def _escape_drive_query(value: str) -> str:
+    """Escape backslashes and single quotes for Drive API query strings."""
+    return value.replace("\\", "\\\\").replace("'", "\\'")
 
 
 class DriveClient:
@@ -92,7 +107,7 @@ class DriveClient:
 
     def _find_folder(self, name: str, parent_id: str) -> str | None:
         q = (
-            f"name={name!r} and mimeType='application/vnd.google-apps.folder' "
+            f"name='{_escape_drive_query(name)}' and mimeType='application/vnd.google-apps.folder' "
             f"and '{parent_id}' in parents and trashed=false"
         )
         resp = self._svc.files().list(q=q, fields="files(id)", pageSize=1, supportsAllDrives=True, includeItemsFromAllDrives=True).execute()
@@ -105,6 +120,7 @@ class DriveClient:
         current_id = root_id
 
         for part in parts:
+            part = _sanitize_folder_name(part)
             cache_key = f"{current_id}/{part}"
             if cache_key in self._folder_cache:
                 current_id = self._folder_cache[cache_key]

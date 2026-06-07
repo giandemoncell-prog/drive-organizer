@@ -95,9 +95,9 @@ class OpusProvider:
 
         resp = self._client.messages.create(
             model=self._model,
-            max_tokens=2000,
+            max_tokens=8192,
             thinking={"type": "adaptive"},
-            output_config={"effort": "high", "format": {"type": "json_schema", "schema": array_schema}},
+            output_config={"effort": "xhigh", "format": {"type": "json_schema", "schema": array_schema}},
             system=_SYSTEM,
             messages=[{"role": "user", "content": user_msg}],
         )
@@ -138,9 +138,9 @@ class OpusProvider:
         """Parse natural language (IT/EN) description into folder taxonomy."""
         resp = self._client.messages.create(
             model=self._model,
-            max_tokens=1000,
+            max_tokens=2048,
             thinking={"type": "adaptive"},
-            output_config={"effort": "high", "format": {"type": "json_schema", "schema": _TAXONOMY_SCHEMA}},
+            output_config={"effort": "xhigh", "format": {"type": "json_schema", "schema": _TAXONOMY_SCHEMA}},
             system=(
                 "You are a file organization expert. "
                 "Convert the user's natural language description of a folder structure into a JSON taxonomy. "
