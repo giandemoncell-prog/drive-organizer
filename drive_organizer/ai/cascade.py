@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import logging
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING
 
 from rich.progress import Progress
@@ -17,7 +19,10 @@ if TYPE_CHECKING:
     from drive_organizer.ai.ollama_provider import OllamaProvider
     from drive_organizer.ai.opus_provider import OpusProvider
 
+logger = logging.getLogger(__name__)
+
 _BATCH_SIZE = 30
+_OLLAMA_PARALLEL = 3           # concurrent batch calls to Ollama
 _CLOUD_INTER_BATCH_SLEEP = 0.25  # seconds between cloud batches to avoid rate limits
 _CLOUD_RETRY_ATTEMPTS = 2
 
@@ -55,6 +60,10 @@ class AICascade:
             int(len(files) * settings.max_cloud_escalations_pct),
         )
 
+        logger.info(
+            "classify_files: %d files, strategy=%s, cloud_cap=%d",
+            len(files), strategy.name, _effective_cap,
+        )
         results: dict[str, ClassificationResult] = {}
 
         try:
@@ -80,15 +89,40 @@ class AICascade:
                 else:
                     needs_ai.append(f)
 
+            cache_hits = len(files) - len(needs_ai)
+            if cache_hits:
+                logger.debug("Cache/deterministic hits: %d/%d", cache_hits, len(files))
             if not needs_ai:
                 return [results.get(f.id, _fallback(f)) for f in files]
 
-            # Step 2: Ollama (skip entirely if not reachable to avoid per-file timeouts)
+            # Step 2: Ollama — parallel batches (worker threads call Ollama, main thread
+            # updates results/cache so no locking needed on those data structures).
             ollama_low: list[DriveFile] = []
             if self._ollama.health_check():
-                for batch in _batches(needs_ai, _BATCH_SIZE):
+                all_batches = list(_batches(needs_ai, _BATCH_SIZE))
+                # ordered[i] = (batch, results_or_None)
+                ordered: list[tuple[list[DriveFile], list | None]] = [([], None)] * len(all_batches)
+
+                def _run_ollama_batch(args: tuple[int, list[DriveFile]]) -> tuple[int, list[DriveFile], list | None]:
+                    idx, batch = args
                     reqs = [build_request(f) for f in batch]
-                    batch_results = self._ollama.classify_batch(reqs, hint, allowed)
+                    try:
+                        return idx, batch, self._ollama.classify_batch(reqs, hint, allowed)
+                    except Exception:
+                        return idx, batch, None
+
+                with ThreadPoolExecutor(max_workers=_OLLAMA_PARALLEL) as pool:
+                    futures = {pool.submit(_run_ollama_batch, (i, b)): i for i, b in enumerate(all_batches)}
+                    for fut in as_completed(futures):
+                        idx, batch, batch_results = fut.result()
+                        ordered[idx] = (batch, batch_results)
+                        if progress and task_id is not None:
+                            progress.advance(task_id, len(batch))
+
+                for batch, batch_results in ordered:
+                    if batch_results is None:
+                        ollama_low.extend(batch)
+                        continue
                     for f, res in zip(batch, batch_results):
                         if res.confidence >= settings.ollama_confidence_threshold:
                             results[f.id] = res
@@ -97,13 +131,15 @@ class AICascade:
                         else:
                             ollama_low.append(f)
                             results[f.id] = res  # provisional
-                    if progress and task_id is not None:
-                        progress.advance(task_id, len(batch))
             else:
+                logger.warning("Ollama unreachable — escalating all %d files to cloud", len(needs_ai))
                 ollama_low = needs_ai
                 if progress and task_id is not None:
                     progress.advance(task_id, len(needs_ai))
 
+            ollama_resolved = len(needs_ai) - len(ollama_low)
+            if ollama_resolved:
+                logger.info("Ollama resolved: %d files", ollama_resolved)
             if not ollama_low:
                 return [results.get(f.id, _fallback(f)) for f in files]
 
@@ -137,10 +173,14 @@ class AICascade:
                         results[f.id] = hres
                 time.sleep(_CLOUD_INTER_BATCH_SLEEP)
 
+            haiku_resolved = len(ollama_low) - len(haiku_low)
+            if haiku_resolved:
+                logger.info("Haiku resolved: %d files (escalations so far: %d)", haiku_resolved, self._cloud_escalations)
             if not haiku_low:
                 return [results.get(f.id, _fallback(f)) for f in files]
 
             # Step 4: Opus (metadata only, final)
+            logger.info("Escalating %d files to Opus", len(haiku_low))
             for batch in _batches(haiku_low, _BATCH_SIZE):
                 if self._cloud_escalations >= _effective_cap:
                     break
@@ -155,6 +195,10 @@ class AICascade:
                         self._cache.set(f, ores)
                 time.sleep(_CLOUD_INTER_BATCH_SLEEP)
 
+            logger.info(
+                "classify_files done: total_cloud_escalations=%d (cap=%d)",
+                self._cloud_escalations, _effective_cap,
+            )
             return [results.get(f.id, _fallback(f)) for f in files]
 
         finally:

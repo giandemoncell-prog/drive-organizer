@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import logging
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
@@ -11,6 +12,8 @@ from drive_organizer.config import settings
 from drive_organizer.drive.client import DriveClient
 from drive_organizer.drive.models import MoveOperation, OrganizationPlan, RollbackEntry, RollbackManifest
 from drive_organizer.ui.console import shared as _console
+
+logger = logging.getLogger(__name__)
 
 
 class PlanExecutor:
@@ -42,10 +45,12 @@ class PlanExecutor:
         manifest = RollbackManifest(
             run_id=run_id,
             strategy=plan.strategy_name,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
             drive_user_email=self._email,
         )
-        manifest_path = self._rollback_dir / f"rollback_{run_id[:8]}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+        manifest_path = self._rollback_dir / f"rollback_{run_id[:8]}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+        active_count = sum(1 for op in plan.moves if not op.skipped)
+        logger.info("Execute run_id=%s strategy=%s files=%d", run_id[:8], plan.strategy_name, active_count)
 
         try:
             active_moves = [op for op in plan.moves if not op.skipped]
@@ -79,7 +84,7 @@ class PlanExecutor:
                         file_name=op.file_name,
                         moved_from_parents=list(op.source_parents),
                         moved_to_parent_id=op.target_parent_id or "",
-                        timestamp=datetime.utcnow(),
+                        timestamp=datetime.now(timezone.utc),
                     )
                     manifest.entries.append(entry)
                     self._save_manifest_atomic(manifest, manifest_path)
@@ -87,12 +92,14 @@ class PlanExecutor:
 
                 failed = self._client.batch_move(active_moves, on_success=on_success)
 
-            manifest.completed_at = datetime.utcnow()
+            manifest.completed_at = datetime.now(timezone.utc)
             self._save_manifest_atomic(manifest, manifest_path)
 
             if failed:
                 _console.print(f"[yellow]Avviso: {len(failed)} file non spostati. IDs: {failed[:5]}{'…' if len(failed) > 5 else ''}")
+                logger.warning("run_id=%s: %d files failed to move", run_id[:8], len(failed))
 
+            logger.info("run_id=%s complete: %d moved, %d failed", run_id[:8], len(manifest.entries), len(failed))
             return manifest
 
         finally:

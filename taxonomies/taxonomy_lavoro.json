@@ -1,0 +1,49 @@
+{
+  "_description": "Struttura professionale — fatture, clienti, progetti, HR, marketing, report.",
+  "folders": [
+    "01_Contratti_e_Accordi",
+    "02_Fatture_e_Pagamenti",
+    "03_Clienti",
+    "04_Progetti",
+    "05_Amministrazione",
+    "06_Risorse_Umane",
+    "07_Marketing_e_Comunicazione",
+    "08_Report_e_Analisi",
+    "99_Archivio"
+  ],
+  "rules": [
+    {
+      "match": "contratto OR accordo OR NDA OR proposta commerciale OR offerta OR preventivo OR capitolato",
+      "target": "01_Contratti_e_Accordi"
+    },
+    {
+      "match": "fattura OR nota spese OR rimborso OR pagamento OR ricevuta OR bonifico OR parcella OR F24",
+      "target": "02_Fatture_e_Pagamenti"
+    },
+    {
+      "match": "cliente OR CRM OR lead OR prospect OR meeting OR riunione cliente OR brief cliente",
+      "target": "03_Clienti"
+    },
+    {
+      "match": "progetto OR brief OR task OR milestone OR sprint OR deliverable OR deadline OR gantt",
+      "target": "04_Progetti"
+    },
+    {
+      "match": "statuto OR visura OR partita IVA OR dichiarazione OR bilancio OR contabilità OR atto",
+      "target": "05_Amministrazione"
+    },
+    {
+      "match": "curriculum OR colloquio OR assunzione OR busta paga OR stipendio OR ferie OR HR OR dipendente",
+      "target": "06_Risorse_Umane"
+    },
+    {
+      "match": "brochure OR volantino OR post OR social OR campagna OR newsletter OR logo OR grafica OR ADV",
+      "target": "07_Marketing_e_Comunicazione"
+    },
+    {
+      "match": "report OR analisi OR dashboard OR statistiche OR KPI OR metrics OR presentazione dati OR slide",
+      "target": "08_Report_e_Analisi"
+    }
+  ],
+  "fallback_folder": "99_Archivio"
+}

@@ -20,6 +20,10 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from drive_organizer.logging_config import setup_logging
+
+setup_logging()
+
 console = Console(legacy_windows=False)
 
 _ACCOUNT_OPTION = click.option(
@@ -181,14 +185,22 @@ def status(account):
 )
 @click.option("--custom-prompt", "-p", default=None, help="Descrizione struttura (per --strategy custom)")
 @click.option("--taxonomy-file", "-t", default=None, help="JSON con tassonomia pre-costruita (bypassa Opus)")
+@click.option("--taxonomy-preset", default=None, metavar="NOME",
+              help="Template preset: lavoro, personale, scolastico_docente, ecc.")
 @click.option("--apply", is_flag=True, default=False, help="Applica le modifiche (default: solo preview)")
 @click.option("--yes", "-y", is_flag=True, default=False, help="Conferma automaticamente senza prompt interattivo")
 @click.option("--ollama-model", default=None, help="Override modello Ollama")
 @click.option("--no-haiku", is_flag=True, default=False, help="Salta Haiku, va diretto a Opus per l'escalation")
 @click.option("--year-only", is_flag=True, default=False, help="Per --strategy date: solo Anno (senza Mese)")
-def organize(account, strategy, custom_prompt, taxonomy_file, apply, yes, ollama_model, no_haiku, year_only):
+@click.option("--incremental", is_flag=True, default=False, help="Scan incrementale (più veloce su Drive già scansionati)")
+@click.option("--export", "export_path", default=None, metavar="FILE",
+              help="Esporta il piano in FILE (.csv o .json) dopo il dry-run")
+def organize(account, strategy, custom_prompt, taxonomy_file, taxonomy_preset, apply, yes, ollama_model, no_haiku, year_only, incremental, export_path):
     """Analizza Google Drive e propone (o applica) una riorganizzazione."""
     _check_credentials()
+
+    if taxonomy_preset and not strategy:
+        strategy = "custom"
 
     if not strategy:
         strategy = click.prompt(
@@ -196,11 +208,24 @@ def organize(account, strategy, custom_prompt, taxonomy_file, apply, yes, ollama
             type=click.Choice(["type", "project", "date", "custom"]),
         )
 
+    if taxonomy_preset and not taxonomy_file:
+        preset_path = Path("taxonomies") / f"taxonomy_{taxonomy_preset}.json"
+        if not preset_path.exists():
+            available = sorted(
+                p.stem[len("taxonomy_"):]
+                for p in Path("taxonomies").glob("taxonomy_*.json")
+            )
+            console.print(f"[red]Preset '{taxonomy_preset}' non trovato.[/red]")
+            if available:
+                console.print(f"Disponibili: {', '.join(available)}")
+            sys.exit(1)
+        taxonomy_file = str(preset_path)
+
     if strategy == "custom" and not custom_prompt and not taxonomy_file:
         custom_prompt = click.prompt("Descrivi la struttura desiderata (IT/EN)")
 
+    from drive_organizer.config import settings
     if ollama_model:
-        from drive_organizer.config import settings
         settings.ollama_model = ollama_model
 
     from drive_organizer.auth.google_auth import get_drive_service, get_authenticated_email
@@ -217,8 +242,13 @@ def organize(account, strategy, custom_prompt, taxonomy_file, apply, yes, ollama
     console.print("[bold]Scansione file (metadati only)…[/bold]")
     from rich.progress import Progress, SpinnerColumn, TextColumn
     with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), console=console) as prog:
-        prog.add_task("Lettura Drive…")
-        files, folder_map = client.scan_all_files()
+        t = prog.add_task("Lettura Drive…")
+        if incremental:
+            safe_email = email.replace("@", "_at_").replace(".", "_")
+            state_path = Path(settings.rollback_dir) / f"scan_state_{safe_email}.json"
+            files, folder_map = client.scan_incremental(state_path, prog, t)
+        else:
+            files, folder_map = client.scan_all_files(prog, t)
     console.print(f"[green]{len(files)} file trovati.[/green]")
 
     strat = _build_strategy(strategy, custom_prompt, no_haiku, taxonomy_file, year_only=year_only)
@@ -246,6 +276,14 @@ def organize(account, strategy, custom_prompt, taxonomy_file, apply, yes, ollama
         plan = planner.build_plan(files, strat, prog, t)
 
     print_diff(console, plan, files, folder_map)
+
+    if export_path:
+        from drive_organizer.exporter import export_plan
+        try:
+            export_plan(plan, Path(export_path), folder_map)
+            console.print(f"[green]Piano esportato:[/green] {export_path}")
+        except ValueError as e:
+            console.print(f"[red]Export non riuscito:[/red] {e}")
 
     active = [op for op in plan.moves if not op.skipped]
     if not active:
@@ -275,10 +313,12 @@ def organize(account, strategy, custom_prompt, taxonomy_file, apply, yes, ollama
 @click.option("--limit", default=0, help="Analizza solo N file (0 = tutti)", type=int)
 @click.option("--offset", default=0, help="Salta i primi N file (per elaborare in batch)", type=int)
 @click.option("--min-confidence", default=0.65, help="Soglia confidenza minima (0.0-1.0)", type=float)
-def rename(account, apply, yes, limit, offset, min_confidence):
+@click.option("--incremental", is_flag=True, default=False, help="Scan incrementale (più veloce su Drive già scansionati)")
+def rename(account, apply, yes, limit, offset, min_confidence, incremental):
     """Rinomina i file usando Ollama (AI locale — contenuto mai al cloud)."""
     _check_credentials()
 
+    from drive_organizer.config import settings
     from drive_organizer.auth.google_auth import get_drive_service, get_authenticated_email
     from drive_organizer.drive.client import DriveClient
     from drive_organizer.renamer import FileRenamer
@@ -302,8 +342,13 @@ def rename(account, apply, yes, limit, offset, min_confidence):
 
     console.print("[bold]Scansione file…[/bold]")
     with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=console) as prog:
-        prog.add_task("Lettura Drive…")
-        files, _ = client.scan_all_files()
+        t = prog.add_task("Lettura Drive…")
+        if incremental:
+            safe_email = email.replace("@", "_at_").replace(".", "_")
+            state_path = Path(settings.rollback_dir) / f"scan_state_{safe_email}.json"
+            files, _ = client.scan_incremental(state_path, prog, t)
+        else:
+            files, _ = client.scan_all_files(prog, t)
 
     movable = [f for f in files if not f.is_folder and not f.is_shortcut and f.owned_by_me]
     if offset > 0:
@@ -540,21 +585,19 @@ def rollback(account, run_id, yes, rollback_all):
 
 
 def _build_strategy(name: str, custom_prompt: str | None, no_haiku: bool, taxonomy_file: str | None = None, year_only: bool = False):
-    if name == "type":
-        from drive_organizer.strategies.by_type import FileTypeStrategy
-        return FileTypeStrategy()
-    elif name == "date":
-        from drive_organizer.strategies.by_date import DateStrategy
-        return DateStrategy(year_only=year_only)
-    elif name == "project":
-        from drive_organizer.strategies.by_project import ProjectTopicStrategy
-        return ProjectTopicStrategy()
-    elif name == "custom":
+    if name == "custom":
         import json
-        from drive_organizer.strategies.custom import CustomNLStrategy
+        from pydantic import ValidationError
+        from drive_organizer.strategies.custom import CustomNLStrategy, Taxonomy
         if taxonomy_file:
-            taxonomy = json.loads(Path(taxonomy_file).read_text(encoding="utf-8"))
-            console.print(f"[green]Tassonomia caricata da file:[/green] {', '.join(taxonomy.get('folders', []))}")
+            try:
+                raw = json.loads(Path(taxonomy_file).read_text(encoding="utf-8"))
+                validated = Taxonomy.model_validate(raw)
+            except ValidationError as e:
+                console.print(f"[red]Tassonomia non valida:[/red]\n{e}")
+                sys.exit(1)
+            taxonomy = validated.model_dump()
+            console.print(f"[green]Tassonomia caricata da file:[/green] {', '.join(validated.folders)}")
         else:
             from drive_organizer.config import settings
             if settings.gemini_api_key and not settings.anthropic_api_key:
@@ -565,11 +608,18 @@ def _build_strategy(name: str, custom_prompt: str | None, no_haiku: bool, taxono
                 from drive_organizer.ai.opus_provider import OpusProvider
                 parser = OpusProvider()
                 console.print("[bold]Opus 4.8 interpreta la struttura desiderata…[/bold]")
-            taxonomy = parser.parse_custom_taxonomy(custom_prompt or "")
+            raw = parser.parse_custom_taxonomy(custom_prompt or "")
+            try:
+                validated = Taxonomy.model_validate(raw)
+                taxonomy = validated.model_dump()
+            except ValidationError as e:
+                console.print(f"[yellow]Avviso: tassonomia AI non valida ({e}), uso raw.[/yellow]")
+                taxonomy = raw
             console.print(f"[green]Tassonomia:[/green] {', '.join(taxonomy.get('folders', []))}")
-        strat = CustomNLStrategy(description=custom_prompt or "", taxonomy=taxonomy)
-        return strat
-    raise ValueError(f"Strategia sconosciuta: {name}")
+        return CustomNLStrategy(description=custom_prompt or "", taxonomy=taxonomy)
+
+    from drive_organizer.strategies.factory import build as _build
+    return _build(name, year_only=year_only)
 
 
 @cli.command()

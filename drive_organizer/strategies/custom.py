@@ -2,9 +2,22 @@ from __future__ import annotations
 
 import re
 
+from pydantic import BaseModel, Field
+
 from drive_organizer.ai.base import ClassificationResult
 from drive_organizer.drive.models import DriveFile
 from drive_organizer.strategies.base import OrganizationStrategy
+
+
+class TaxonomyRule(BaseModel):
+    match: str
+    target: str
+
+
+class Taxonomy(BaseModel):
+    folders: list[str] = Field(default_factory=list)
+    rules: list[TaxonomyRule] = Field(default_factory=list)
+    fallback_folder: str = "99_Archivio"
 
 
 def _parse_keywords(match_expr: str) -> list[str]:
@@ -84,6 +97,6 @@ class CustomNLStrategy(OrganizationStrategy):
             provider="deterministic",
         )
 
-    def set_taxonomy(self, taxonomy: dict) -> None:
+    def set_taxonomy(self, taxonomy: dict[str, object]) -> None:
         self._taxonomy = taxonomy
         self._compiled_rules = self._compile_rules()

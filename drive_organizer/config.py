@@ -34,6 +34,8 @@ class Settings(BaseSettings):
         "Workflow Backups",
     ]
 
+    web_auth_token: str = ""
+
     credentials_path: str = "credentials.json"
     tokens_dir: str = "tokens"
     rollback_dir: str = "logs"

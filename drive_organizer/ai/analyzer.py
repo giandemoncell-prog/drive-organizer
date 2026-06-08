@@ -62,7 +62,7 @@ Restituisci JSON con questo schema esatto:
 def _build_profile(
     files: list[DriveFile],
     existing_top_folders: list[str],
-) -> dict:
+) -> dict[str, object]:
     """Build statistical profile from actual Drive files."""
     ext_counter: Counter = Counter()
     name_samples_by_ext: dict[str, list[str]] = {}
@@ -100,7 +100,7 @@ def _build_profile(
     }
 
 
-def _format_prompt(profile: dict, existing_folders: list[str]) -> str:
+def _format_prompt(profile: dict[str, object], existing_folders: list[str]) -> str:
     ext_lines = "\n".join(
         f"  .{ext}: {count} file"
         for ext, count in profile["ext_counter"].most_common(20)
@@ -208,7 +208,7 @@ def _call_qwen(prompt: str) -> dict:
 def analyze_and_propose(
     files: list[DriveFile],
     existing_top_folders: list[str],
-) -> dict:
+) -> dict[str, object]:
     """
     Analyze actual Drive files and propose a personalized taxonomy.
     Tries providers in order: Gemini → DeepSeek → Qwen.
