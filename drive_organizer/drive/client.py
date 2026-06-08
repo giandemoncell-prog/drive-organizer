@@ -90,44 +90,63 @@ class DriveClient:
         self._svc = service
         self._folder_cache: dict[str, str] = {}
 
+    def _clone_http(self):
+        """Create an independent authorized HTTP transport (thread-safe copy)."""
+        import httplib2
+        import google_auth_httplib2
+        creds = self._svc._http.credentials
+        return google_auth_httplib2.AuthorizedHttp(creds, http=httplib2.Http())
+
     def scan_all_files(
         self,
         progress: Progress | None = None,
         task_id=None,
     ) -> tuple[list[DriveFile], dict[str, str]]:
-        """Returns (files, folder_id_to_name). Never downloads content."""
-        files: list[DriveFile] = []
-        folder_map: dict[str, str] = {}
-        page_token: str | None = None
-        logger.info("Full scan started")
+        """Returns (files, folder_id_to_name). Runs folders and files queries in parallel."""
+        logger.info("Full scan started (parallel queries)")
 
-        while True:
-            kwargs: dict = dict(
-                pageSize=1000,
-                fields=_FIELDS,
-                q="trashed=false",
-                supportsAllDrives=True,
-                includeItemsFromAllDrives=True,
+        def _fetch_pages(http, q_filter: str, fields: str) -> list[dict]:
+            items: list[dict] = []
+            page_token: str | None = None
+            while True:
+                kwargs: dict = dict(
+                    pageSize=1000,
+                    fields=fields,
+                    q=f"trashed=false and {q_filter}",
+                    supportsAllDrives=True,
+                    includeItemsFromAllDrives=True,
+                )
+                if page_token:
+                    kwargs["pageToken"] = page_token
+                req = self._svc.files().list(**kwargs)
+                resp = _drive_call(lambda r=req, h=http: r.execute(http=h))
+                items.extend(resp.get("files", []))
+                page_token = resp.get("nextPageToken")
+                if not page_token:
+                    return items
+
+        http1 = self._clone_http()
+        http2 = self._clone_http()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            f_folders = pool.submit(
+                _fetch_pages, http1,
+                "mimeType='application/vnd.google-apps.folder'",
+                _FOLDER_FIELDS,
             )
-            if page_token:
-                kwargs["pageToken"] = page_token
+            f_files = pool.submit(
+                _fetch_pages, http2,
+                "mimeType!='application/vnd.google-apps.folder'",
+                _FIELDS,
+            )
+            folder_items = f_folders.result()
+            file_items = f_files.result()
 
-            resp = _drive_call(lambda kw=kwargs: self._svc.files().list(**kw).execute())
-            items = resp.get("files", [])
+        folder_map = {item["id"]: item["name"] for item in folder_items}
+        files = [self._parse_file_item(item) for item in file_items]
 
-            for item in items:
-                f = self._parse_file_item(item)
-                if f.is_folder:
-                    folder_map[f.id] = f.name
-                else:
-                    files.append(f)
-
-            if progress and task_id is not None:
-                progress.advance(task_id, len(items))
-
-            page_token = resp.get("nextPageToken")
-            if not page_token:
-                break
+        if progress and task_id is not None:
+            progress.advance(task_id, len(files) + len(folder_map))
 
         logger.info("Full scan complete: %d files, %d folders", len(files), len(folder_map))
         return files, folder_map
