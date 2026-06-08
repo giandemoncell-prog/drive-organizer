@@ -95,48 +95,39 @@ class DriveClient:
         progress: Progress | None = None,
         task_id=None,
     ) -> tuple[list[DriveFile], dict[str, str]]:
-        """Returns (files, folder_id_to_name). Never downloads content.
+        """Returns (files, folder_id_to_name). Never downloads content."""
+        files: list[DriveFile] = []
+        folder_map: dict[str, str] = {}
+        page_token: str | None = None
+        logger.info("Full scan started")
 
-        Runs two concurrent queries — folders (minimal fields) and files (full
-        fields) — to halve wall-clock time on large Drives.  Both threads share
-        `self._svc`; googleapiclient creates independent HttpRequest objects per
-        call so concurrent reads are safe.
-        """
-        logger.info("Full scan started (parallel queries)")
+        while True:
+            kwargs: dict = dict(
+                pageSize=1000,
+                fields=_FIELDS,
+                q="trashed=false",
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
+            )
+            if page_token:
+                kwargs["pageToken"] = page_token
 
-        def _fetch_pages(q_filter: str, fields: str) -> list[dict]:
-            items: list[dict] = []
-            page_token: str | None = None
-            while True:
-                kwargs: dict = dict(
-                    pageSize=1000,
-                    fields=fields,
-                    q=f"trashed=false and {q_filter}",
-                    supportsAllDrives=True,
-                    includeItemsFromAllDrives=True,
-                )
-                if page_token:
-                    kwargs["pageToken"] = page_token
-                resp = _drive_call(lambda kw=kwargs: self._svc.files().list(**kw).execute())
-                items.extend(resp.get("files", []))
-                page_token = resp.get("nextPageToken")
-                if not page_token:
-                    return items
+            resp = _drive_call(lambda kw=kwargs: self._svc.files().list(**kw).execute())
+            items = resp.get("files", [])
 
-        _FOLDER_Q = "mimeType='application/vnd.google-apps.folder'"
-        _FILE_Q = "mimeType!='application/vnd.google-apps.folder'"
+            for item in items:
+                f = self._parse_file_item(item)
+                if f.is_folder:
+                    folder_map[f.id] = f.name
+                else:
+                    files.append(f)
 
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            folder_future = pool.submit(_fetch_pages, _FOLDER_Q, _FOLDER_FIELDS)
-            file_future = pool.submit(_fetch_pages, _FILE_Q, _FIELDS)
-            folder_items = folder_future.result()
-            file_items = file_future.result()
+            if progress and task_id is not None:
+                progress.advance(task_id, len(items))
 
-        folder_map: dict[str, str] = {item["id"]: item["name"] for item in folder_items}
-        files: list[DriveFile] = [self._parse_file_item(item) for item in file_items]
-
-        if progress and task_id is not None:
-            progress.advance(task_id, len(files) + len(folder_map))
+            page_token = resp.get("nextPageToken")
+            if not page_token:
+                break
 
         logger.info("Full scan complete: %d files, %d folders", len(files), len(folder_map))
         return files, folder_map

@@ -1,10 +1,18 @@
 from __future__ import annotations
 
+import os
 import sys
 import threading
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+try:
+    import certifi
+    os.environ.setdefault("REQUESTS_CA_BUNDLE", certifi.where())
+    os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+except ImportError:
+    pass
 
 from flask import Flask, jsonify, request
 
