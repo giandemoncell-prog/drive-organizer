@@ -4,6 +4,7 @@ Struttura: `scripts/<gruppo>/<script>`
 
 | File | Percorso | Funzione |
 |------|----------|----------|
+| `export_catalog.py` | `inspect/` | Esporta struttura Drive in CSV+JSON (nome, percorso, ext, dimensione, data) |
 | `smoke_test_parallel_scan.py` | `inspect/` | Smoke test scan parallelo su Drive reale |
 | `folder_stats.py` | `inspect/` | Statistiche cartelle top-level (file + sottocartelle) |
 | `list_folders.py` | `inspect/` | Lista cartelle root con indicazione ownership |
@@ -16,6 +17,7 @@ Struttura: `scripts/<gruppo>/<script>`
 | `audit_all.py` | `audit/` | Audit ciclico tutte le cartelle top-level via AI (verifica posizione file) |
 | `audit_and_rename.py` | `audit/` | Pipeline completa: audit posizioni + rename file non leggibili |
 | `audit_casa_immobili.py` | `audit/` | Audit specifico 02_Casa_e_Immobili (sposta fuori i file errati) |
+| `rename_cantiere_photos.py` | `fix/` | Rinomina foto in 📸 Foto_2025 con formato PROPRIETA_YYYY-MM-DD_NN.jpg |
 | `fix_cv_formazione.py` | `fix/` | Sposta file non pertinenti fuori da CV_Formazione |
 | `fix_documenti_vari.py` | `fix/` | Sposta file da Documenti_Vari nelle cartelle corrette (v1) |
 | `fix_documenti_vari2.py` | `fix/` | Sposta file da Documenti_Vari (v2 — bulk load, evita apostrofi) |
