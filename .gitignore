@@ -19,6 +19,12 @@ AppDir/
 # Logs e runtime
 logs/
 
+# Cache runtime locale
+.drive_organizer_cache.json
+
+# Build Windows
+build_win/
+
 # Python
 __pycache__/
 *.pyc

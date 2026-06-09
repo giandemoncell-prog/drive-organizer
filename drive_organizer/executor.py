@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -108,4 +109,13 @@ class PlanExecutor:
     def _save_manifest_atomic(self, manifest: RollbackManifest, path: Path) -> None:
         tmp = path.with_suffix(".tmp")
         tmp.write_text(manifest.model_dump_json(indent=2), encoding="utf-8")
-        os.replace(tmp, path)
+        # Windows Defender/AV may briefly lock the file — retry with backoff
+        for attempt in range(6):
+            try:
+                os.replace(tmp, path)
+                return
+            except PermissionError:
+                if attempt < 5:
+                    time.sleep(0.05 * (2 ** attempt))  # 50ms, 100ms, 200ms, 400ms, 800ms
+                else:
+                    raise

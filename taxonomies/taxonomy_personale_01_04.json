@@ -1,0 +1,119 @@
+{
+  "_description": "Struttura personale 01-04: documenti, casa/immobili, scuola/didattica, progetti/social",
+  "folders": [],
+  "rules": [
+    {
+      "match": "carta identit OR passaporto OR codice fiscale OR tessera sanitaria OR CIE OR anagrafe OR stato civile OR documento identit OR Demontis 2031",
+      "target": "01_📂Documenti_Personali/🪪 Identità"
+    },
+    {
+      "match": "curriculum vitae OR CV OR europass OR diploma OR laurea OR certificato OR attestato OR formazione OR titolo studio OR guide consigli carriera OR analisi CV OR suggerimenti carriera OR opportunit lavorative",
+      "target": "01_📂Documenti_Personali/📄 CV_Formazione"
+    },
+    {
+      "match": "medico OR prescrizione OR occhiali OR visita OR referto OR ricetta OR salute OR sanitario OR ottico OR progressivi OR rayban OR modello occhiali",
+      "target": "01_📂Documenti_Personali/🏥 Salute"
+    },
+    {
+      "match": "auto OR veicolo OR fiat OR panda OR patente OR bollo OR revisione OR moto OR targa OR motorino",
+      "target": "01_📂Documenti_Personali/🚗 Veicoli"
+    },
+    {
+      "match": "visto OR permesso soggiorno OR NIE OR permessi OR immigrazione OR ospitalit OR internazionale",
+      "target": "01_📂Documenti_Personali/🌍 Estero_Visti"
+    },
+    {
+      "match": "Widline OR Rigaud OR dati personali Widline",
+      "target": "01_📂Documenti_Personali/🌍 Estero_Visti/Widline"
+    },
+    {
+      "match": "contratto OR procura OR atto notarile OR accordo OR MODCLI OR attivazione OR rinuncia eredit OR procura liti OR procura stragiudiziale",
+      "target": "01_📂Documenti_Personali/📋 Legale_Fiscale/📜 Contratti"
+    },
+    {
+      "match": "F24 OR dichiarazione redditi OR IRPEF OR accertamento fiscale OR agenzia entrate OR DettaglioPagamenti OR pagamenti 2024",
+      "target": "01_📂Documenti_Personali/📋 Legale_Fiscale/🏦 Fisco_e_Tasse"
+    },
+    {
+      "match": "polizza OR assicurazione OR premio assicurativo OR PRP OR RCA OR vita OR infortuni OR sinistro OR certificato polizza",
+      "target": "01_📂Documenti_Personali/📋 Legale_Fiscale/🛡️ Polizze"
+    },
+    {
+      "match": "pratiche legali OR avvocato OR legale OR tribunale personale OR azione legale",
+      "target": "01_📂Documenti_Personali/📋 Legale_Fiscale/⚖️ Pratiche_Legali"
+    },
+    {
+      "match": "ordinanza OR offerta integrale OR busta paga OR colloquio OR candidatura OR assunzione OR offerta lavoro OR ricerca lavoro OR lavoro basato curriculum",
+      "target": "01_📂Documenti_Personali/💼 Lavoro"
+    },
+    {
+      "match": "biglietto treno OR biglietto aereo OR volo OR hotel OR prenotazione OR freccia OR carta freccia OR itinerario OR viaggio OR Gran Canaria OR Siviglia OR UraHotels OR EB-RH OR EB-HD OR low cost OR stopover OR deposito hotel",
+      "target": "01_📂Documenti_Personali/📋 Documenti_Vari"
+    },
+    {
+      "match": "IMU OR imposta municipale OR aree edificabili OR relazione stima IMU OR accertamento IMU OR riscontro IMU OR prot 8157",
+      "target": "02_📂Casa_e_Immobili/🏛️ IMU_e_Tasse"
+    },
+    {
+      "match": "bolletta OR Enel OR Abbanoa OR luce OR acqua OR Tiscali OR dettaglio movimento utenza OR condominio enel OR utenza",
+      "target": "02_📂Casa_e_Immobili/💡 Bollette_Utenze"
+    },
+    {
+      "match": "Sarroch OR foglio 28 OR particella 93 OR EDM SARROCH OR I443",
+      "target": "02_📂Casa_e_Immobili/🏠 Sarroch"
+    },
+    {
+      "match": "Sant Antioco OR sant antioco OR APE SANT OR F13PART11",
+      "target": "02_📂Casa_e_Immobili/🏠 Sant'Antioco"
+    },
+    {
+      "match": "Spettu OR Via Nazionale 122 OR condominio preventivo OR condominio spese",
+      "target": "02_📂Casa_e_Immobili/🏠 Spettu_45"
+    },
+    {
+      "match": "ristrutturazione OR lavori edili OR preventivo lavori OR umidita OR danni bagno OR climatizzatore OR disimpegno climatizzatore OR scala telescopica OR Marchetti Black OR misura umidita OR danni",
+      "target": "02_📂Casa_e_Immobili/🔨 Lavori_Ristrutturazione"
+    },
+    {
+      "match": "asta OR aggiudicazione OR tribunale immobile OR vendita immobile OR monitoraggio immobili OR valutazione immobile",
+      "target": "02_📂Casa_e_Immobili/📑 Aste_e_Vendite"
+    },
+    {
+      "match": "appartamento OR valutazione ristrutturazione OR immobile personale",
+      "target": "02_📂Casa_e_Immobili/📄 Documenti_Generali"
+    },
+    {
+      "match": "DSA OR BES OR disturbo apprendimento OR dislessia OR discalculia OR inclusione OR sostegno OR PDP OR piano didattico personalizzato OR note generali PDP OR linee guida PDP OR PDP coordinatore",
+      "target": "03_📂Scuola_e_Didattica/🎓 DSA_BES"
+    },
+    {
+      "match": "libro OR KDP OR Amazon OR manoscritto OR blurb OR copertina OR AI e DSA OR manuale KDP OR capitolo libro OR prompt gemini dsa OR 5 prompt gemini OR anno zero libro OR AnnoZeroLibro",
+      "target": "03_📂Scuola_e_Didattica/📚 Libro_IA_KDP"
+    },
+    {
+      "match": "lezione OR presentazione OR dispensa OR esercizio OR IoT OR mBot OR stampa 3D OR ICT OR fondamenti ICT OR navigare web OR pec OR firma elettronica OR privacy sicurezza OR riassunto OR modulo OR Accipitrum OR isola OR comunicazione collaborazione",
+      "target": "03_📂Scuola_e_Didattica/📝 Materiali_Didattici"
+    },
+    {
+      "match": "circolare OR docente OR insegnante OR graduatoria OR titoli precedenza OR supplenza OR istituto scolastico OR classe OR scuola OR nota operativa",
+      "target": "03_📂Scuola_e_Didattica/👨‍🏫 Pratiche_Docente"
+    },
+    {
+      "match": "bachata OR bachata vibes OR BVM OR brano OR canzone OR testo brano OR suno OR lyrics OR strateg bachata OR credenziali bachata OR analisi bachata OR roadmap bachata OR cover bachata OR Bajo La Piel OR Fuego OR Neon Santo OR Beside Your Name OR retention curve OR baseline 28 OR analytics bachata",
+      "target": "04_📂Progetti_e_Social/01_📂BachataVibes"
+    },
+    {
+      "match": "tiktok OR playwright OR upload video OR automazione video OR Crea Reels OR Crea Post Promozionali OR n8n OR workflow OR i miei workflow OR automazione social OR social media automation OR instagram reel OR facebook post OR caption social",
+      "target": "04_📂Progetti_e_Social/03_📂Automazioni_Social"
+    },
+    {
+      "match": "Horizon Worlds OR HorizonWorlds OR VR OR realt virtuale OR mondo virtuale OR meta VR OR valori_05 OR ora del sistema OR limiti creazione",
+      "target": "04_📂Progetti_e_Social/🎮 HorizonWorlds_VR"
+    },
+    {
+      "match": "python OR codice OR software OR app OR API OR github OR drive organizer OR installazione OR guida tecnica OR Wake-on-LAN OR BIOS OR dipendenze OR chiavi API OR credenziali API OR DriveOrganizer OR manuale linux OR chrome OS OR sh OR workflow N8N OR Albi Pretori OR anno zero cronache OR CreaReelsBachata",
+      "target": "04_📂Progetti_e_Social/00_📂Sviluppo_e_Software"
+    }
+  ],
+  "fallback_folder": "01_📂Documenti_Personali/📋 Documenti_Vari"
+}
