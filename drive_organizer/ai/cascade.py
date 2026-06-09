@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from rich.progress import Progress
 
-from drive_organizer.ai.base import ClassificationRequest, ClassificationResult
+from drive_organizer.ai.base import ClassificationResult
 from drive_organizer.ai.cache import SignatureCache
 from drive_organizer.ai.privacy import build_request
 from drive_organizer.config import settings
@@ -30,9 +30,9 @@ _CLOUD_RETRY_ATTEMPTS = 2
 class AICascade:
     def __init__(
         self,
-        ollama: "OllamaProvider",
-        haiku: "HaikuProvider",
-        opus: "OpusProvider",
+        ollama: OllamaProvider,
+        haiku: HaikuProvider,
+        opus: OpusProvider,
     ):
         self._ollama = ollama
         self._haiku = haiku

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from googleapiclient.errors import HttpError
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
 from drive_organizer.config import settings

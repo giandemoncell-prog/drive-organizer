@@ -25,19 +25,23 @@ _OPEN_PREFIXES = ("/static/",)
 
 @app.before_request
 def _check_auth():
+    import hmac
+
     from drive_organizer.config import settings
     if not settings.web_auth_token:
         return
     if request.path in _OPEN_PATHS or any(request.path.startswith(p) for p in _OPEN_PREFIXES):
         return
-    token = request.headers.get("X-Auth-Token") or request.args.get("token")
-    if token != settings.web_auth_token:
+    token = request.headers.get("X-Auth-Token") or request.args.get("token") or ""
+    # Constant-time comparison avoids leaking the token via response timing.
+    if not hmac.compare_digest(token, settings.web_auth_token):
         return jsonify({"error": "Unauthorized — set X-Auth-Token header or ?token= query param"}), 401
 
 
 # ── Background TTL cleanup ────────────────────────────────────────────────────
 def _ops_cleanup():
     import time
+
     from web_app.state import _ops, _ops_ts
     while True:
         time.sleep(300)
@@ -51,13 +55,13 @@ def _ops_cleanup():
 threading.Thread(target=_ops_cleanup, daemon=True, name="ops-cleanup").start()
 
 # ── Register blueprints ───────────────────────────────────────────────────────
-from web_app.routes.status import bp as status_bp
-from web_app.routes.organize import bp as organize_bp
-from web_app.routes.taxonomy import bp as taxonomy_bp
-from web_app.routes.duplicates import bp as duplicates_bp
-from web_app.routes.rollback import bp as rollback_bp
 from web_app.routes.config import bp as config_bp
+from web_app.routes.duplicates import bp as duplicates_bp
+from web_app.routes.organize import bp as organize_bp
 from web_app.routes.rename import bp as rename_bp
+from web_app.routes.rollback import bp as rollback_bp
+from web_app.routes.status import bp as status_bp
+from web_app.routes.taxonomy import bp as taxonomy_bp
 
 app.register_blueprint(status_bp)
 app.register_blueprint(organize_bp)

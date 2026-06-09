@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from drive_organizer.ai.base import ClassificationRequest, ClassificationResult
+from drive_organizer.ai.base import ClassificationResult
 from drive_organizer.drive.models import DriveFile
 
 

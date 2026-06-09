@@ -2,10 +2,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tests.helpers import make_file
-from drive_organizer.ai.cascade import AICascade, _batches, _retry_classify, _fallback
 from drive_organizer.ai.base import ClassificationResult
+from drive_organizer.ai.cascade import AICascade, _batches, _fallback, _retry_classify
 from drive_organizer.strategies.by_type import FileTypeStrategy
+from tests.helpers import make_file
 
 
 def _res(file_id, path, conf=0.9, provider="haiku"):

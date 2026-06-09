@@ -4,7 +4,7 @@ import threading
 
 from flask import Blueprint, jsonify, request
 
-from web_app.helpers import _FakeProgress, new_op
+from web_app.helpers import new_op
 
 bp = Blueprint("duplicates", __name__)
 

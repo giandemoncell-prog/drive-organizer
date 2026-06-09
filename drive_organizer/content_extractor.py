@@ -8,10 +8,8 @@ import atexit
 import concurrent.futures
 import io
 import tempfile
-from pathlib import Path
 
 from googleapiclient.http import MediaIoBaseDownload
-
 
 _TEMP_DIRS: list[str] = []
 

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from drive_organizer.drive.models import DriveFile
 from drive_organizer.strategies.base import OrganizationStrategy
 
 _DEFAULT_FOLDERS = [

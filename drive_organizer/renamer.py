@@ -5,7 +5,6 @@ Il contenuto viene letto solo da Ollama — non esce mai verso API cloud.
 from __future__ import annotations
 
 import re
-from pathlib import PurePosixPath
 
 import requests
 
@@ -100,7 +99,8 @@ def _ollama_rename(
     }
     resp = requests.post(f"{base_url}/api/chat", json=payload, timeout=60)
     resp.raise_for_status()
-    import json, re as re2
+    import json
+    import re as re2
     raw = resp.json()["message"]["content"]
     try:
         return json.loads(raw)

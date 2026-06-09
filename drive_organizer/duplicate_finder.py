@@ -10,10 +10,8 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
 
 from drive_organizer.drive.models import DriveFile
-
 
 _COPY_PATTERNS = [
     re.compile(r"\s*\(\d+\)\s*$"),           # "file (1)", "file (2)"

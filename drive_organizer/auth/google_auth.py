@@ -14,8 +14,9 @@ try:
     truststore.inject_into_ssl()
 except ImportError:
     try:
-        import certifi as _certifi
         import ssl as _ssl
+
+        import certifi as _certifi
         _ssl_ctx = _ssl.create_default_context(cafile=_certifi.where())
     except ImportError:
         pass

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Prompt, Confirm
+from rich.prompt import Confirm, Prompt
 from rich.rule import Rule
 
 console = Console(legacy_windows=False)
@@ -185,7 +185,7 @@ def run_setup() -> bool:
     app_dir = _get_app_dir()
     creds_dest = app_dir / "credentials.json"
 
-    console.print(f"Il file scaricato da Google va rinominato [bold]credentials.json[/bold]")
+    console.print("Il file scaricato da Google va rinominato [bold]credentials.json[/bold]")
     console.print(f"e copiato in: [cyan]{app_dir}[/cyan]")
     console.print()
 
@@ -227,7 +227,7 @@ def run_setup() -> bool:
         return False
 
     try:
-        from drive_organizer.auth.google_auth import get_drive_service, get_authenticated_email
+        from drive_organizer.auth.google_auth import get_authenticated_email, get_drive_service
         from drive_organizer.drive.client import DriveClient
         console.print("[dim]Apertura browser…[/dim]")
         svc = get_drive_service()

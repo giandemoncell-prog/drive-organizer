@@ -20,7 +20,9 @@ def api_status():
     try:
         from drive_organizer.ai.ollama_provider import OllamaProvider
         from drive_organizer.auth.google_auth import (
-            get_authenticated_email, get_drive_service, list_accounts,
+            get_authenticated_email,
+            get_drive_service,
+            list_accounts,
         )
         from drive_organizer.config import settings
         from drive_organizer.drive.client import DriveClient

@@ -5,16 +5,15 @@ import logging
 import os
 import re
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
-from typing import Callable
 
 from googleapiclient.errors import HttpError
 from rich.progress import Progress
 
 from drive_organizer.drive.models import DriveFile, MoveOperation
-from drive_organizer.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -92,8 +91,8 @@ class DriveClient:
 
     def _clone_http(self):
         """Create an independent authorized HTTP transport (thread-safe copy)."""
-        import httplib2
         import google_auth_httplib2
+        import httplib2
         creds = self._svc._http.credentials
         return google_auth_httplib2.AuthorizedHttp(creds, http=httplib2.Http())
 
@@ -109,13 +108,13 @@ class DriveClient:
             items: list[dict] = []
             page_token: str | None = None
             while True:
-                kwargs: dict = dict(
-                    pageSize=1000,
-                    fields=fields,
-                    q=f"trashed=false and {q_filter}",
-                    supportsAllDrives=True,
-                    includeItemsFromAllDrives=True,
-                )
+                kwargs: dict = {
+                    "pageSize": 1000,
+                    "fields": fields,
+                    "q": f"trashed=false and {q_filter}",
+                    "supportsAllDrives": True,
+                    "includeItemsFromAllDrives": True,
+                }
                 if page_token:
                     kwargs["pageToken"] = page_token
                 req = self._svc.files().list(**kwargs)

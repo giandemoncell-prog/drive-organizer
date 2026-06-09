@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "drive-organizer"
-version = "1.0.0"
+version = "1.5.0"
 description = "Riorganizza Google Drive con AI locale + cloud (cascade: Ollama → Haiku → Opus)"
 readme = "README.md"
 license = { text = "MIT" }
@@ -32,7 +32,7 @@ dependencies = [
 drive-organizer = "main:cli"
 
 [project.optional-dependencies]
-dev = ["pyinstaller>=6.0", "pytest>=8.0", "pytest-cov>=5.0"]
+dev = ["pyinstaller>=6.0", "pytest>=8.0", "pytest-cov>=5.0", "ruff>=0.6"]
 
 [tool.setuptools]
 py-modules = ["main"]

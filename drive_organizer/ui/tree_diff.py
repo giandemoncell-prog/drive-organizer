@@ -17,15 +17,15 @@ def build_before_summary(files: list[DriveFile], folder_map: dict[str, str]) -> 
         parent_id = f.parents[0] if f.parents else "root"
         by_parent[parent_id].append(f)
 
-    shown = 0
-    for parent_id, file_list in sorted(by_parent.items(), key=lambda x: -len(x[1])):
+    for shown, (parent_id, file_list) in enumerate(
+        sorted(by_parent.items(), key=lambda x: -len(x[1])), start=1
+    ):
         folder_name = folder_map.get(parent_id, f"[dim]{parent_id[:8]}…[/dim]")
         branch = tree.add(f"[cyan]{folder_name}[/cyan] ({len(file_list)} file)")
         for f in file_list[:3]:
             branch.add(f"[dim]{f.name}[/dim]")
         if len(file_list) > 3:
             branch.add(f"[dim]… e altri {len(file_list) - 3}[/dim]")
-        shown += 1
         if shown >= 10:
             remaining = len(by_parent) - shown
             if remaining > 0:
@@ -84,7 +84,7 @@ def print_diff(console: Console, plan: OrganizationPlan, files: list[DriveFile],
     for op in active:
         by_provider[op.provider] += 1
 
-    console.print(f"[bold]Riepilogo piano:[/bold]")
+    console.print("[bold]Riepilogo piano:[/bold]")
     console.print(f"  File da spostare: [green]{len(active)}[/green]")
     console.print(f"  Cartelle da creare: [green]{len(plan.folders_to_create)}[/green]")
     if skipped:

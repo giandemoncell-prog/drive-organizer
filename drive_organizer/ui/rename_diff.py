@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections import defaultdict
-
 from rich.console import Console
 from rich.table import Table
 
@@ -32,7 +30,7 @@ def print_rename_preview(console: Console, plan: RenamePlan) -> None:
     console.print()
     console.print(table)
     console.print()
-    console.print(f"[bold]Riepilogo:[/bold]")
+    console.print("[bold]Riepilogo:[/bold]")
     console.print(f"  File da rinominare: [green]{len(active)}[/green]")
     if skipped:
         console.print(f"  File saltati:       [yellow]{len(skipped)}[/yellow] (nome già ottimale, confidenza bassa o non rinominabili)")

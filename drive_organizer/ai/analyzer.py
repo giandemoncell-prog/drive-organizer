@@ -120,6 +120,7 @@ def _format_prompt(profile: dict[str, object], existing_folders: list[str]) -> s
 
 def _call_anthropic(prompt: str) -> dict:
     import anthropic
+
     from drive_organizer.config import settings
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
@@ -138,6 +139,7 @@ def _call_anthropic(prompt: str) -> dict:
 def _call_gemini(prompt: str) -> dict:
     from google import genai
     from google.genai import types
+
     from drive_organizer.config import settings
 
     client = genai.Client(api_key=settings.gemini_api_key)
@@ -157,6 +159,7 @@ def _call_gemini(prompt: str) -> dict:
 
 def _call_deepseek(prompt: str) -> dict:
     import httpx
+
     from drive_organizer.config import settings
 
     resp = httpx.post(
@@ -182,6 +185,7 @@ def _call_deepseek(prompt: str) -> dict:
 
 def _call_qwen(prompt: str) -> dict:
     import httpx
+
     from drive_organizer.config import settings
 
     resp = httpx.post(

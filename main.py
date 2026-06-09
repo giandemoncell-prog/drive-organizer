@@ -78,7 +78,7 @@ def setup():
 def auth(account):
     """Autenticazione Google Drive (apre il browser)."""
     _check_credentials()
-    from drive_organizer.auth.google_auth import get_drive_service, get_authenticated_email
+    from drive_organizer.auth.google_auth import get_authenticated_email, get_drive_service
     console.print("Apertura browser per autenticazione Google…")
     try:
         svc = get_drive_service(account)
@@ -111,10 +111,10 @@ def accounts():
 def status(account):
     """Mostra statistiche Drive e stato componenti AI."""
     _check_credentials()
-    from drive_organizer.auth.google_auth import get_drive_service, get_authenticated_email
-    from drive_organizer.drive.client import DriveClient
     from drive_organizer.ai.ollama_provider import OllamaProvider
+    from drive_organizer.auth.google_auth import get_authenticated_email, get_drive_service
     from drive_organizer.config import settings
+    from drive_organizer.drive.client import DriveClient
 
     console.print("[bold]Connessione a Google Drive…[/bold]")
     try:
@@ -158,9 +158,10 @@ def status(account):
     from rich.progress import Progress, SpinnerColumn, TextColumn
     with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=console) as prog:
         prog.add_task("Lettura metadati…")
-        files, folder_map = client.scan_all_files()
+        files, _folder_map = client.scan_all_files()
 
     from collections import Counter
+
     from drive_organizer.strategies.by_type import _MIME_MAP
     type_counts: Counter = Counter()
     for f in files:
@@ -228,7 +229,7 @@ def organize(account, strategy, custom_prompt, taxonomy_file, taxonomy_preset, a
     if ollama_model:
         settings.ollama_model = ollama_model
 
-    from drive_organizer.auth.google_auth import get_drive_service, get_authenticated_email
+    from drive_organizer.auth.google_auth import get_authenticated_email, get_drive_service
     from drive_organizer.drive.client import DriveClient
     from drive_organizer.planner import OrganizationPlanner
     from drive_organizer.ui.tree_diff import print_diff
@@ -263,7 +264,7 @@ def organize(account, strategy, custom_prompt, taxonomy_file, taxonomy_preset, a
         if not ollama_ok:
             console.print("[yellow]Avviso: Ollama non raggiungibile — i file ambigui verranno escalati a cloud.[/yellow]")
 
-    from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
+    from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
     with Progress(
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
@@ -318,12 +319,13 @@ def rename(account, apply, yes, limit, offset, min_confidence, incremental):
     """Rinomina i file usando Ollama (AI locale — contenuto mai al cloud)."""
     _check_credentials()
 
+    from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+
+    from drive_organizer.auth.google_auth import get_authenticated_email, get_drive_service
     from drive_organizer.config import settings
-    from drive_organizer.auth.google_auth import get_drive_service, get_authenticated_email
     from drive_organizer.drive.client import DriveClient
     from drive_organizer.renamer import FileRenamer
     from drive_organizer.ui.rename_diff import print_rename_preview
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 
     console.print("\n[bold]Connessione Google Drive…[/bold]")
     svc = get_drive_service(account)
@@ -398,10 +400,11 @@ def rename(account, apply, yes, limit, offset, min_confidence, incremental):
 def rename_rollback(account):
     """Annulla una sessione di rinomina precedente."""
     _check_credentials()
+    from rich.table import Table as RichTable
+
     from drive_organizer.auth.google_auth import get_drive_service
     from drive_organizer.drive.client import DriveClient
     from drive_organizer.rename_executor import RenameRollbackManager
-    from rich.table import Table as RichTable
 
     svc = get_drive_service(account)
     client = DriveClient(svc)
@@ -444,15 +447,14 @@ def duplicates(account, apply, archive_folder):
     """Trova e archivia file duplicati (stesso contenuto o stesso nome)."""
     _check_credentials()
 
-    from drive_organizer.auth.google_auth import get_drive_service, get_authenticated_email
-    from drive_organizer.drive.client import DriveClient
-    from drive_organizer.duplicate_finder import find_duplicates
-    from drive_organizer.ui.duplicate_diff import print_duplicate_preview, ask_exceptions
-    from drive_organizer.executor import PlanExecutor
-    from drive_organizer.drive.models import (
-        OrganizationPlan, MoveOperation
-    )
     from rich.progress import Progress, SpinnerColumn, TextColumn
+
+    from drive_organizer.auth.google_auth import get_authenticated_email, get_drive_service
+    from drive_organizer.drive.client import DriveClient
+    from drive_organizer.drive.models import MoveOperation, OrganizationPlan
+    from drive_organizer.duplicate_finder import find_duplicates
+    from drive_organizer.executor import PlanExecutor
+    from drive_organizer.ui.duplicate_diff import ask_exceptions, print_duplicate_preview
 
     console.print("\n[bold]Connessione Google Drive…[/bold]")
     svc = get_drive_service(account)
@@ -587,7 +589,9 @@ def rollback(account, run_id, yes, rollback_all):
 def _build_strategy(name: str, custom_prompt: str | None, no_haiku: bool, taxonomy_file: str | None = None, year_only: bool = False):
     if name == "custom":
         import json
+
         from pydantic import ValidationError
+
         from drive_organizer.strategies.custom import CustomNLStrategy, Taxonomy
         if taxonomy_file:
             try:
@@ -628,6 +632,7 @@ def web(port):
     """Avvia la web UI locale nel browser."""
     import threading
     import webbrowser
+
     from web import app
     url = f"http://localhost:{port}"
     console.print(f"[bold]Drive Organizer Web UI[/bold] → [link={url}]{url}[/link]")

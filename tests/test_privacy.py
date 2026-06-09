@@ -1,8 +1,8 @@
 import pytest
 
-from tests.helpers import make_file
-from drive_organizer.ai.privacy import build_request, build_requests
 from drive_organizer.ai.base import ClassificationRequest
+from drive_organizer.ai.privacy import build_request, build_requests
+from tests.helpers import make_file
 
 
 def test_build_request_maps_metadata():

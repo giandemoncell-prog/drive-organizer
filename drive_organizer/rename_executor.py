@@ -5,11 +5,11 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from drive_organizer.config import settings
 from drive_organizer.drive.client import DriveClient
-from drive_organizer.drive.models import RenamePlan, RenameManifest, RenameManifestEntry
+from drive_organizer.drive.models import RenameManifest, RenameManifestEntry, RenamePlan
 from drive_organizer.ui.console import shared as _console
 
 
@@ -100,7 +100,7 @@ class RenameRollbackManager:
             TimeElapsedColumn(),
             console=_console,
         ) as progress:
-            task = progress.add_task(f"Ripristino nomi…", total=len(entries))
+            task = progress.add_task("Ripristino nomi…", total=len(entries))
             failed = 0
             for entry in reversed(entries):
                 try:

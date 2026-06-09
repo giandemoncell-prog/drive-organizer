@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import click
 from rich.console import Console
-from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from drive_organizer.duplicate_finder import DuplicateGroup, DuplicatePlan
+from drive_organizer.duplicate_finder import DuplicatePlan
 
 
 def _size_str(size: int | None) -> str:
@@ -65,7 +64,7 @@ def print_duplicate_preview(console: Console, plan: DuplicatePlan) -> None:
 
     console.print()
     active = plan.files_to_archive
-    console.print(f"[bold]Riepilogo:[/bold]")
+    console.print("[bold]Riepilogo:[/bold]")
     console.print(f"  Gruppi totali:          [cyan]{plan.total_groups}[/cyan]")
     console.print(f"  File da archiviare:     [yellow]{len(active)}[/yellow]  (spostati in 99_Archivio/Duplicati)")
     console.print(f"  Eccezioni (tenuti tutti): [dim]{plan.excepted_count}[/dim]")

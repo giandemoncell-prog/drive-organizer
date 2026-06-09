@@ -17,7 +17,7 @@ def api_config_get():
     from drive_organizer.config import settings
 
     def mask(v):
-        return (v[:8] + "…") if len(v) > 8 else ("(vuota)" if not v else v)
+        return (v[:8] + "…") if len(v) > 8 else (v if v else "(vuota)")
 
     if settings.anthropic_api_key:
         active = "Anthropic"

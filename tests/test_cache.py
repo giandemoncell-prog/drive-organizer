@@ -1,6 +1,6 @@
-from tests.helpers import make_file
-from drive_organizer.ai.cache import SignatureCache
 from drive_organizer.ai.base import ClassificationResult
+from drive_organizer.ai.cache import SignatureCache
+from tests.helpers import make_file
 
 
 def _res(path="PDF") -> ClassificationResult:

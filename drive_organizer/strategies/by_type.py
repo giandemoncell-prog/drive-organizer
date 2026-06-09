@@ -97,7 +97,7 @@ class FileTypeStrategy(OrganizationStrategy):
         return f"Classify by file type into one of: {', '.join(_FOLDERS)}"
 
     def allowed_folders(self) -> list[str]:
-        return _FOLDERS + ["Altro"]
+        return [*_FOLDERS, "Altro"]
 
     def requires_ai(self) -> bool:
         return False

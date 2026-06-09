@@ -1,10 +1,8 @@
 from datetime import datetime, timezone
 
-import pytest
-
-from tests.helpers import make_file
-from drive_organizer.strategies.by_type import FileTypeStrategy
 from drive_organizer.strategies.by_date import DateStrategy
+from drive_organizer.strategies.by_type import FileTypeStrategy
+from tests.helpers import make_file
 
 
 class TestFileTypeStrategy:

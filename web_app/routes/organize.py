@@ -9,7 +9,7 @@ from pathlib import Path
 from flask import Blueprint, Response, jsonify, request
 
 from web_app.helpers import _FakeProgress, build_cascade, new_op
-from web_app.state import _plans, _structure_cache, _structure_loading, _structure_lock
+from web_app.state import _plans, _structure_lock
 
 bp = Blueprint("organize", __name__)
 
@@ -46,7 +46,9 @@ def api_organize():
 
             if strategy == "custom":
                 import re as _re
+
                 from pydantic import ValidationError as _VE
+
                 from drive_organizer.config import settings
                 from drive_organizer.strategies.custom import CustomNLStrategy, Taxonomy
 
@@ -276,7 +278,7 @@ def api_structure_proposed():
 
             q.put({"type": "info", "message": "Connessione Drive..."})
             svc = get_drive_service(account)
-            email = get_authenticated_email(svc)
+            get_authenticated_email(svc)  # validate auth early (preview route, email unused)
             client = DriveClient(svc)
 
             q.put({"type": "info", "message": "Scansione file..."})
