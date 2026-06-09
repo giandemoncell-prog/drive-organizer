@@ -14,6 +14,7 @@ Struttura: `scripts/<gruppo>/<script>`
 | `scan_archivio.py` | `inspect/` | Lista file flat in 99_Archivio |
 | `count_old_folders.py` | `inspect/` | Conta contenuto delle vecchie cartelle pre-riorganizzazione |
 | `map_old_subfolders.py` | `inspect/` | Mostra piano merge vecchie cartelle → nuove (solo stampa) |
+| `audit_rename_full.py` | `audit/` | Full pass AI: verifica nome + posizione di TUTTI i file (supporta --folder e --apply) |
 | `audit_all.py` | `audit/` | Audit ciclico tutte le cartelle top-level via AI (verifica posizione file) |
 | `audit_and_rename.py` | `audit/` | Pipeline completa: audit posizioni + rename file non leggibili |
 | `audit_casa_immobili.py` | `audit/` | Audit specifico 02_Casa_e_Immobili (sposta fuori i file errati) |
