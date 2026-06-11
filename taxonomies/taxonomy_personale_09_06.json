@@ -1,0 +1,245 @@
+{
+  "_description": "Struttura personale 09-06. Keyword strategy: frasi multi-parola solo se consecutive nel nome file; parole singole per file con underscore/trattini.",
+  "folders": [],
+  "rules": [
+
+    {
+      "match": "carta identita OR passaporto OR codice fiscale OR tessera sanitaria OR CIE OR anagrafe OR stato civile OR Demontis 2031 OR patente di guida",
+      "target": "01_📂Documenti_Personali/🪪 Identità"
+    },
+    {
+      "match": "idoneita abitativa OR idoneità abitativa OR ospitalita Widline OR contratto Widline OR permesso Widline OR dati_widline OR passaporto Widline",
+      "target": "01_📂Documenti_Personali/🌍 Estero_Visti/Widline"
+    },
+    {
+      "match": "Widline",
+      "target": "01_📂Documenti_Personali/🌍 Estero_Visti/Widline"
+    },
+    {
+      "match": "NIE OR appuntamento NIE OR Las Palmas NIE OR cita previa OR extranjeria OR NIE_Z",
+      "target": "01_📂Documenti_Personali/🌍 Estero_Visti/NIE_Permessi"
+    },
+    {
+      "match": "CartaFRECCIA OR biglietto aereo OR volo prenotazione OR hotel prenotazione OR itinerario viaggio OR deposito hotel OR stopover OR UraHotels OR EB-RH OR EB-HD",
+      "target": "01_📂Documenti_Personali/🌍 Estero_Visti/✈️ Voli_Biglietti"
+    },
+    {
+      "match": "visto OR dichiarazione ospitalita OR soggiorno estero OR Gran Canaria OR Siviglia OR immigrazione estero OR permesso soggiorno",
+      "target": "01_📂Documenti_Personali/🌍 Estero_Visti"
+    },
+    {
+      "match": "prescrizione occhiali OR occhiali progressivi OR modello occhiali OR rayban OR ottico OR referto medico OR visita medica OR ricetta medica",
+      "target": "01_📂Documenti_Personali/🏥 Salute"
+    },
+    {
+      "match": "polizza RC OR certificato polizza OR attestato rischio OR PRP OR RC Auto OR bollo auto OR revisione auto OR targa GR172LF",
+      "target": "01_📂Documenti_Personali/🚗 Veicoli/📋 Assicurazioni"
+    },
+    {
+      "match": "acquisto veicolo OR vendita veicolo OR atto trasferimento proprieta OR compravendita auto OR rottamazione OR BP109RT",
+      "target": "01_📂Documenti_Personali/🚗 Veicoli/🏷️ Acquisto_Vendita"
+    },
+    {
+      "match": "auto OR veicolo OR patente OR Fiat Panda OR motorino OR moto OR immatricolazione OR libretto auto OR carta circolazione",
+      "target": "01_📂Documenti_Personali/🚗 Veicoli"
+    },
+    {
+      "match": "curriculum vitae EN OR CV English OR resume English",
+      "target": "01_📂Documenti_Personali/📄 CV_Formazione/CV EN"
+    },
+    {
+      "match": "curriculum vitae ES OR CV Espanol OR hoja de vida",
+      "target": "01_📂Documenti_Personali/📄 CV_Formazione/CV ES"
+    },
+    {
+      "match": "universita OR tesi laurea OR esame universitario OR libretto universitario",
+      "target": "01_📂Documenti_Personali/📄 CV_Formazione/Documenti Universitari"
+    },
+    {
+      "match": "guida consigli carriera OR analisi CV OR suggerimenti carriera OR opportunita lavorative",
+      "target": "01_📂Documenti_Personali/📄 CV_Formazione/Guide e Consigli"
+    },
+    {
+      "match": "curriculum OR europass OR diploma OR laurea OR certificato formazione OR attestato OR titolo studio",
+      "target": "01_📂Documenti_Personali/📄 CV_Formazione"
+    },
+    {
+      "match": "F24 OR dichiarazione redditi OR IRPEF OR modello 730 OR CU certificazione OR unico fiscale OR 730 precompilato",
+      "target": "01_📂Documenti_Personali/📋 Legale_Fiscale/🏦 Fisco_e_Tasse"
+    },
+    {
+      "match": "rinuncia eredita OR successione OR testamento OR eredita Dessi OR Dessi eredita",
+      "target": "01_📂Documenti_Personali/📋 Legale_Fiscale/🏛️ Fisco"
+    },
+    {
+      "match": "polizza vita OR polizza infortuni OR assicurazione depositi OR sinistro polizza",
+      "target": "01_📂Documenti_Personali/📋 Legale_Fiscale/🛡️ Polizze"
+    },
+    {
+      "match": "BBVA OR truffa BBVA OR frode bancaria OR furto identita BBVA OR messaggi chiamate truffa",
+      "target": "01_📂Documenti_Personali/📋 Legale_Fiscale/⚖️ Pratiche_Legali/🏦 Truffa_BBVA"
+    },
+    {
+      "match": "Pannella OR tutela legale Pannella OR ARAG OR PTA.24 OR nomina avvocato tutela",
+      "target": "01_📂Documenti_Personali/📋 Legale_Fiscale/⚖️ Pratiche_Legali/⚖️ Tutela_Legale_Pannella"
+    },
+    {
+      "match": "avvocato OR tribunale personale OR azione legale OR sentenza OR ricorso",
+      "target": "01_📂Documenti_Personali/📋 Legale_Fiscale/⚖️ Pratiche_Legali"
+    },
+    {
+      "match": "contratto locazione privata OR procura liti OR MODCLI OR procura stragiudiziale OR atto notarile",
+      "target": "01_📂Documenti_Personali/📋 Legale_Fiscale/📜 Contratti"
+    },
+    {
+      "match": "estratto conto OR movimenti bancari OR HYPE movimenti OR Revolut movimenti OR N26 OR SatispAY OR carta di credito saldo",
+      "target": "01_📂Documenti_Personali/Banca_Assicurazioni"
+    },
+    {
+      "match": "lettera assunzione OR contratto lavoro dipendente OR CFL OR indeterminato OR busta paga",
+      "target": "01_📂Documenti_Personali/💼 Lavoro/📋 Contratti_Assunzione"
+    },
+    {
+      "match": "candidatura lavoro OR colloquio lavoro OR analisi candidatura OR offerta lavoro esterna",
+      "target": "01_📂Documenti_Personali/💼 Lavoro/📊 Candidature"
+    },
+    {
+      "match": "IIS Brotzu OR CTS Cagliari OR supplenza scuola OR graduatoria scolastica OR titoli di precedenza OR MIUR OR USR OR verbale restituzione ausilio",
+      "target": "01_📂Documenti_Personali/💼 Lavoro/🏫 Scuola_Docente"
+    },
+    {
+      "match": "ordinanza lavorativa",
+      "target": "01_📂Documenti_Personali/💼 Lavoro"
+    },
+
+    {
+      "match": "Via E Pais OR asta immobiliare OR aggiudicazione asta OR perizia immobile asta OR verbale udienza asta OR offerta asta OR offerta telematica asta OR avviso vendita immobile OR Tripepi OR marca bollo asta OR bonifico asta",
+      "target": "02_📂Casa_e_Immobili/📑 Aste_e_Vendite"
+    },
+
+    {
+      "match": "controdeduzioni OR relazione stima OR lottizzazione OR accertamento_imu OR Accertamento_IMU",
+      "target": "02_📂Casa_e_Immobili/🏠 Sarroch/🏛️ IMU_Contenzioso"
+    },
+    {
+      "match": "delibera cc OR pec comune sarroch OR pagopa imu OR riscontro richiesta OR ricevuta protocollazione OR daticert OR segnatura pec",
+      "target": "02_📂Casa_e_Immobili/🏠 Sarroch/🏛️ IMU_Contenzioso"
+    },
+    {
+      "match": "IMU Sarroch OR aree edificabili OR riscontro IMU OR accertamento IMU",
+      "target": "02_📂Casa_e_Immobili/🏠 Sarroch/🏛️ IMU_Contenzioso"
+    },
+    {
+      "match": "EDM SARROCH OR SARROCH I443 OR particella 93 OR particella 271 OR catasto Sarroch",
+      "target": "02_📂Casa_e_Immobili/🏠 Sarroch/📋 Catasto"
+    },
+    {
+      "match": "Sarroch OR abbanoa sarroch",
+      "target": "02_📂Casa_e_Immobili/🏠 Sarroch"
+    },
+
+    {
+      "match": "Sant Antioco OR sant antioco OR APE Sant Antioco OR F13PART11 OR porta blindata tunisi OR indagine imprese antioco",
+      "target": "02_📂Casa_e_Immobili/🏠 Sant'Antioco"
+    },
+
+    {
+      "match": "Bolletta_A2A OR Bolletta_Enel OR Bolletta_Abbanoa OR bolletta elettrica via tripoli OR A2A_Novembre OR Abbanoa_Gennaio OR Numero_Cliente_ENEL",
+      "target": "02_📂Casa_e_Immobili/🏠 Spettu_45/💡 Bollette"
+    },
+    {
+      "match": "unieuro OR condominio_saldo OR quote_condominiali OR bilanci via spettu OR preventivo condominio spettu",
+      "target": "02_📂Casa_e_Immobili/🏠 Spettu_45/📋 Condominio"
+    },
+    {
+      "match": "danni bagno OR disimpegno climatizzatore OR misura umidita OR Umidita-armadio OR Umidita_armadio OR deumidificatore OR Danni-Bagno OR danni_bagno OR Bagno-adiacente OR infiltrazioni",
+      "target": "02_📂Casa_e_Immobili/🏠 Spettu_45/📸 Foto_Danni"
+    },
+    {
+      "match": "scala telescopica OR Marchetti Black OR bonifico scala spettu",
+      "target": "02_📂Casa_e_Immobili/🏠 Spettu_45/🔧 Lavori"
+    },
+    {
+      "match": "Spettu OR Via M. Spettu OR Quartucciu condominio",
+      "target": "02_📂Casa_e_Immobili/🏠 Spettu_45"
+    },
+
+    {
+      "match": "visura Via Bolzano OR planimetria Via Bolzano OR RLI12 Via Bolzano OR tavola Via Bolzano OR inquadramento Via Bolzano OR addebito RLI Via Bolzano OR set informativo Bolzano",
+      "target": "02_📂Casa_e_Immobili/🏠 Via_Bolzano_20/📋 Documenti"
+    },
+    {
+      "match": "precedente intestatario Bolzano OR utenza Bolzano OR Bolletta_Precedente_Intestatario",
+      "target": "02_📂Casa_e_Immobili/🏠 Via_Bolzano_20/💡 Bollette"
+    },
+    {
+      "match": "Demontis OR facciata Bolzano OR impianto elettrico Bolzano OR demolizione Bolzano OR porta blindata Bolzano OR dichiarazione rispondenza impianto OR bonifico ristrutturazione OR rilievi porte OR corridoio pluviali OR documentazione fotografica balcone OR lettera sicurezza lavoro OR ristrutturazione acquisto",
+      "target": "02_📂Casa_e_Immobili/🏠 Via_Bolzano_20/🔨 Lavori"
+    },
+    {
+      "match": "foto cantiere Bolzano OR foto ristrutturazione Bolzano OR Contatore1 OR Contatore2 OR Punto_Fornitura",
+      "target": "02_📂Casa_e_Immobili/🏠 Via_Bolzano_20/📸 Foto_Cantiere"
+    },
+    {
+      "match": "Via Bolzano OR Bolzano 20",
+      "target": "02_📂Casa_e_Immobili/🏠 Via_Bolzano_20"
+    },
+
+    {
+      "match": "UNDICI SRL OR RLI18782010 OR RLI22114166 OR affitto nazionale 122 OR prospetto affitti",
+      "target": "02_📂Casa_e_Immobili/🏠 Via_Nazionale_122/📋 Affitti"
+    },
+    {
+      "match": "Via Nazionale 122",
+      "target": "02_📂Casa_e_Immobili/🏠 Via_Nazionale_122"
+    },
+
+    {
+      "match": "IBAN pagamenti casa OR Coldiretti OR migliori offerte luce OR dall acqua dolce OR valutazione appartamento",
+      "target": "02_📂Casa_e_Immobili/📄 Documenti_Generali"
+    },
+
+    {
+      "match": "DSA OR BES OR disturbo apprendimento OR dislessia OR discalculia OR inclusione OR sostegno OR PDP OR piano didattico personalizzato OR note generali PDP OR linee guida PDP",
+      "target": "03_📂Scuola_e_Didattica/🎓 DSA_BES"
+    },
+    {
+      "match": "libro KDP OR Amazon KDP OR manoscritto KDP OR blurb KDP OR copertina libro OR AI e DSA OR capitolo libro OR anno zero libro OR AnnoZeroLibro OR lead magnet libro",
+      "target": "03_📂Scuola_e_Didattica/📚 Libro_IA_KDP"
+    },
+    {
+      "match": "circolare scolastica OR graduatoria OR titoli precedenza art OR supplenza OR istituto scolastico OR nota operativa scuola OR domanda part time rientro",
+      "target": "03_📂Scuola_e_Didattica/👨‍🏫 Pratiche_Docente"
+    },
+    {
+      "match": "lezione OR presentazione didattica OR dispensa OR IoT OR mBot OR stampa 3D OR ICT fondamenti OR navigare web OR PEC firma elettronica OR Accipitrum OR Urbino presentazione",
+      "target": "03_📂Scuola_e_Didattica/📝 Materiali_Didattici"
+    },
+    {
+      "match": "registro classe OR verbale consiglio classe OR fascicolo alunno OR scheda alunno",
+      "target": "03_📂Scuola_e_Didattica/🏫 Documentazione"
+    },
+
+    {
+      "match": "bachata OR bachata vibes OR BVM OR brano bachata OR testo brano bachata OR suno bachata OR Bajo La Piel OR Fuego On The Floor OR Neon Santo Domingo OR Beside Your Name OR retention curve OR baseline 28gg OR analytics bachata",
+      "target": "04_📂Progetti_e_Social/01_📂BachataVibes"
+    },
+    {
+      "match": "tiktok OR playwright upload OR automazione video OR n8n workflow OR social media automation OR instagram reel OR facebook post OR Crea Reels OR Albi Pretori OR anno zero cronache",
+      "target": "04_📂Progetti_e_Social/03_📂Automazioni_Social"
+    },
+    {
+      "match": "Horizon Worlds OR HorizonWorlds OR VR realta virtuale OR mondo virtuale OR meta VR OR valori_05 OR limiti creazione",
+      "target": "04_📂Progetti_e_Social/🎮 HorizonWorlds_VR"
+    },
+    {
+      "match": "python OR codice OR software OR API OR github OR drive organizer OR guida tecnica OR Wake-on-LAN OR BIOS OR chiavi API OR credenziali API OR DriveOrganizer OR manuale linux OR chrome OS OR CreaReelsBachata",
+      "target": "04_📂Progetti_e_Social/00_📂Sviluppo_e_Software"
+    },
+    {
+      "match": "materiali vari social OR credenziali social OR post social generico OR materiale marketing generico",
+      "target": "04_📂Progetti_e_Social/📥 Materiali_Vari"
+    }
+  ],
+  "fallback_folder": "01_📂Documenti_Personali/📋 Documenti_Vari"
+}

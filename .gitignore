@@ -38,3 +38,6 @@ venv/
 
 # Plugin cache Claude Code
 .omc/
+
+# Script one-off con ID hardcoded (non distribuibili)
+_*.py

@@ -164,7 +164,6 @@ def api_plan_export(op_id: str):
 
 @bp.route("/api/structure/current")
 def api_structure_current():
-    global _structure_loading
     import web_app.state as _st
 
     with _structure_lock:

@@ -7,7 +7,7 @@ import re
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from googleapiclient.errors import HttpError
@@ -268,7 +268,7 @@ class DriveClient:
         state = {
             "version": _STATE_VERSION,
             "page_token": page_token,
-            "saved_at": datetime.utcnow().isoformat(),
+            "saved_at": datetime.now(timezone.utc).isoformat(),
             "files": [f.model_dump(mode="json") for f in files],
             "folder_map": folder_map,
         }

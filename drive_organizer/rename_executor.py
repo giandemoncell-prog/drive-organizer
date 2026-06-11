@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
@@ -25,12 +25,12 @@ class RenameExecutor:
         run_id = str(uuid.uuid4())
         manifest = RenameManifest(
             run_id=run_id,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
             drive_user_email=self._email,
         )
         manifest_path = (
             self._rollback_dir
-            / f"rename_{run_id[:8]}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+            / f"rename_{run_id[:8]}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
         )
 
         failed = 0
@@ -57,7 +57,7 @@ class RenameExecutor:
                     failed += 1
                 progress.advance(task)
 
-        manifest.completed_at = datetime.utcnow()
+        manifest.completed_at = datetime.now(timezone.utc)
         self._save_manifest_atomic(manifest, manifest_path)
 
         if failed:

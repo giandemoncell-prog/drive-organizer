@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pydantic import BaseModel, Field
 
@@ -34,7 +34,7 @@ class RollbackEntry(BaseModel):
     file_name: str
     moved_from_parents: list[str]
     moved_to_parent_id: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class MoveOperation(BaseModel):
@@ -51,7 +51,7 @@ class MoveOperation(BaseModel):
 
 class OrganizationPlan(BaseModel):
     strategy_name: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     moves: list[MoveOperation] = Field(default_factory=list)
     folders_to_create: list[str] = Field(default_factory=list)
     total_files: int = 0
@@ -80,7 +80,7 @@ class RenameOperation(BaseModel):
 
 
 class RenamePlan(BaseModel):
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     operations: list[RenameOperation] = Field(default_factory=list)
     total_files: int = 0
     skipped_files: int = 0
@@ -90,7 +90,7 @@ class RenameManifestEntry(BaseModel):
     file_id: str
     old_name: str
     new_name: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class RenameManifest(BaseModel):
