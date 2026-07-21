@@ -1,0 +1,931 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+new file mode 100644
+index 0000000..81defcb
+--- /dev/null
++++ b/.github/workflows/ci.yml
+@@ -0,0 +1,27 @@
++name: CI
++
++on:
++  push:
++    branches: [main, master]
++  pull_request:
++
++jobs:
++  lint-and-test:
++    runs-on: ubuntu-latest
++    strategy:
++      matrix:
++        python-version: ["3.11", "3.12"]
++    steps:
++      - uses: actions/checkout@v4
++      - uses: actions/setup-python@v5
++        with:
++          python-version: ${{ matrix.python-version }}
++      - name: Install dependencies
++        run: |
++          python -m pip install --upgrade pip
++          pip install -e ".[dev]"
++          pip install ruff
++      - name: Lint (ruff)
++        run: ruff check .
++      - name: Run tests
++        run: pytest -q
+diff --git a/drive_organizer/ai/analyzer.py b/drive_organizer/ai/analyzer.py
+index 64c1e96..c4925b4 100644
+--- a/drive_organizer/ai/analyzer.py
++++ b/drive_organizer/ai/analyzer.py
+@@ -120,6 +120,7 @@ def _format_prompt(profile: dict[str, object], existing_folders: list[str]) -> s
+ 
+ def _call_anthropic(prompt: str) -> dict:
+     import anthropic
++
+     from drive_organizer.config import settings
+ 
+     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+@@ -138,6 +139,7 @@ def _call_anthropic(prompt: str) -> dict:
+ def _call_gemini(prompt: str) -> dict:
+     from google import genai
+     from google.genai import types
++
+     from drive_organizer.config import settings
+ 
+     client = genai.Client(api_key=settings.gemini_api_key)
+@@ -157,6 +159,7 @@ def _call_gemini(prompt: str) -> dict:
+ 
+ def _call_deepseek(prompt: str) -> dict:
+     import httpx
++
+     from drive_organizer.config import settings
+ 
+     resp = httpx.post(
+@@ -182,6 +185,7 @@ def _call_deepseek(prompt: str) -> dict:
+ 
+ def _call_qwen(prompt: str) -> dict:
+     import httpx
++
+     from drive_organizer.config import settings
+ 
+     resp = httpx.post(
+diff --git a/drive_organizer/ai/base.py b/drive_organizer/ai/base.py
+index f382e2f..de53ac4 100644
+--- a/drive_organizer/ai/base.py
++++ b/drive_organizer/ai/base.py
+@@ -2,6 +2,7 @@ from __future__ import annotations
+ 
+ from datetime import datetime
+ from typing import Literal, Protocol, runtime_checkable
++
+ from pydantic import BaseModel, ConfigDict, Field
+ 
+ 
+diff --git a/drive_organizer/ai/cascade.py b/drive_organizer/ai/cascade.py
+index d708149..3b8a633 100644
+--- a/drive_organizer/ai/cascade.py
++++ b/drive_organizer/ai/cascade.py
+@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
+ 
+ from rich.progress import Progress
+ 
+-from drive_organizer.ai.base import ClassificationRequest, ClassificationResult
++from drive_organizer.ai.base import ClassificationResult
+ from drive_organizer.ai.cache import SignatureCache
+ from drive_organizer.ai.privacy import build_request
+ from drive_organizer.config import settings
+@@ -30,9 +30,9 @@ _CLOUD_RETRY_ATTEMPTS = 2
+ class AICascade:
+     def __init__(
+         self,
+-        ollama: "OllamaProvider",
+-        haiku: "HaikuProvider",
+-        opus: "OpusProvider",
++        ollama: OllamaProvider,
++        haiku: HaikuProvider,
++        opus: OpusProvider,
+     ):
+         self._ollama = ollama
+         self._haiku = haiku
+diff --git a/drive_organizer/auth/google_auth.py b/drive_organizer/auth/google_auth.py
+index abce01a..9ddd144 100644
+--- a/drive_organizer/auth/google_auth.py
++++ b/drive_organizer/auth/google_auth.py
+@@ -14,8 +14,9 @@ try:
+     truststore.inject_into_ssl()
+ except ImportError:
+     try:
+-        import certifi as _certifi
+         import ssl as _ssl
++
++        import certifi as _certifi
+         _ssl_ctx = _ssl.create_default_context(cafile=_certifi.where())
+     except ImportError:
+         pass
+diff --git a/drive_organizer/config.py b/drive_organizer/config.py
+index 73d27b4..2619994 100644
+--- a/drive_organizer/config.py
++++ b/drive_organizer/config.py
+@@ -1,5 +1,5 @@
+-from pydantic_settings import BaseSettings
+ from pydantic import Field
++from pydantic_settings import BaseSettings
+ 
+ 
+ class Settings(BaseSettings):
+diff --git a/drive_organizer/content_extractor.py b/drive_organizer/content_extractor.py
+index 7f1aa19..0f2d12d 100644
+--- a/drive_organizer/content_extractor.py
++++ b/drive_organizer/content_extractor.py
+@@ -8,11 +8,9 @@ import atexit
+ import concurrent.futures
+ import io
+ import tempfile
+-from pathlib import Path
+ 
+ from googleapiclient.http import MediaIoBaseDownload
+ 
+-
+ _TEMP_DIRS: list[str] = []
+ 
+ 
+diff --git a/drive_organizer/drive/client.py b/drive_organizer/drive/client.py
+index 6996af8..490b311 100644
+--- a/drive_organizer/drive/client.py
++++ b/drive_organizer/drive/client.py
+@@ -5,16 +5,15 @@ import logging
+ import os
+ import re
+ import time
+-from concurrent.futures import ThreadPoolExecutor, as_completed
++from collections.abc import Callable
++from concurrent.futures import ThreadPoolExecutor
+ from datetime import datetime
+ from pathlib import Path
+-from typing import Callable
+ 
+ from googleapiclient.errors import HttpError
+ from rich.progress import Progress
+ 
+ from drive_organizer.drive.models import DriveFile, MoveOperation
+-from drive_organizer.config import settings
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -92,8 +91,8 @@ class DriveClient:
+ 
+     def _clone_http(self):
+         """Create an independent authorized HTTP transport (thread-safe copy)."""
+-        import httplib2
+         import google_auth_httplib2
++        import httplib2
+         creds = self._svc._http.credentials
+         return google_auth_httplib2.AuthorizedHttp(creds, http=httplib2.Http())
+ 
+@@ -109,13 +108,13 @@ class DriveClient:
+             items: list[dict] = []
+             page_token: str | None = None
+             while True:
+-                kwargs: dict = dict(
+-                    pageSize=1000,
+-                    fields=fields,
+-                    q=f"trashed=false and {q_filter}",
+-                    supportsAllDrives=True,
+-                    includeItemsFromAllDrives=True,
+-                )
++                kwargs: dict = {
++                    "pageSize": 1000,
++                    "fields": fields,
++                    "q": f"trashed=false and {q_filter}",
++                    "supportsAllDrives": True,
++                    "includeItemsFromAllDrives": True,
++                }
+                 if page_token:
+                     kwargs["pageToken"] = page_token
+                 req = self._svc.files().list(**kwargs)
+diff --git a/drive_organizer/drive/models.py b/drive_organizer/drive/models.py
+index feae295..ac2fb7a 100644
+--- a/drive_organizer/drive/models.py
++++ b/drive_organizer/drive/models.py
+@@ -1,8 +1,8 @@
+ from __future__ import annotations
+ 
+ from datetime import datetime
+-from typing import Literal
+-from pydantic import BaseModel, ConfigDict, Field
++
++from pydantic import BaseModel, Field
+ 
+ 
+ class DriveFile(BaseModel):
+diff --git a/drive_organizer/duplicate_finder.py b/drive_organizer/duplicate_finder.py
+index 8302bc6..6955206 100644
+--- a/drive_organizer/duplicate_finder.py
++++ b/drive_organizer/duplicate_finder.py
+@@ -10,11 +10,9 @@ from __future__ import annotations
+ import re
+ from collections import defaultdict
+ from dataclasses import dataclass, field
+-from datetime import datetime
+ 
+ from drive_organizer.drive.models import DriveFile
+ 
+-
+ _COPY_PATTERNS = [
+     re.compile(r"\s*\(\d+\)\s*$"),           # "file (1)", "file (2)"
+     re.compile(r"\s*-\s*copia\s*$", re.I),   # "file - Copia"
+diff --git a/drive_organizer/executor.py b/drive_organizer/executor.py
+index 46b4706..8f68e14 100644
+--- a/drive_organizer/executor.py
++++ b/drive_organizer/executor.py
+@@ -7,7 +7,7 @@ import uuid
+ from datetime import datetime, timezone
+ from pathlib import Path
+ 
+-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
++from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+ 
+ from drive_organizer.config import settings
+ from drive_organizer.drive.client import DriveClient
+diff --git a/drive_organizer/exporter.py b/drive_organizer/exporter.py
+index cce1b59..e584854 100644
+--- a/drive_organizer/exporter.py
++++ b/drive_organizer/exporter.py
+@@ -1,7 +1,6 @@
+ from __future__ import annotations
+ 
+ import csv
+-import json
+ from pathlib import Path
+ 
+ from drive_organizer.drive.models import OrganizationPlan
+diff --git a/drive_organizer/rename_executor.py b/drive_organizer/rename_executor.py
+index f0843ad..df13f01 100644
+--- a/drive_organizer/rename_executor.py
++++ b/drive_organizer/rename_executor.py
+@@ -5,11 +5,11 @@ import uuid
+ from datetime import datetime
+ from pathlib import Path
+ 
+-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
++from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+ 
+ from drive_organizer.config import settings
+ from drive_organizer.drive.client import DriveClient
+-from drive_organizer.drive.models import RenamePlan, RenameManifest, RenameManifestEntry
++from drive_organizer.drive.models import RenameManifest, RenameManifestEntry, RenamePlan
+ from drive_organizer.ui.console import shared as _console
+ 
+ 
+@@ -100,7 +100,7 @@ class RenameRollbackManager:
+             TimeElapsedColumn(),
+             console=_console,
+         ) as progress:
+-            task = progress.add_task(f"Ripristino nomi…", total=len(entries))
++            task = progress.add_task("Ripristino nomi…", total=len(entries))
+             failed = 0
+             for entry in reversed(entries):
+                 try:
+diff --git a/drive_organizer/renamer.py b/drive_organizer/renamer.py
+index 0bc2ebb..21e5e15 100644
+--- a/drive_organizer/renamer.py
++++ b/drive_organizer/renamer.py
+@@ -5,7 +5,6 @@ Il contenuto viene letto solo da Ollama — non esce mai verso API cloud.
+ from __future__ import annotations
+ 
+ import re
+-from pathlib import PurePosixPath
+ 
+ import requests
+ 
+@@ -100,7 +99,8 @@ def _ollama_rename(
+     }
+     resp = requests.post(f"{base_url}/api/chat", json=payload, timeout=60)
+     resp.raise_for_status()
+-    import json, re as re2
++    import json
++    import re as re2
+     raw = resp.json()["message"]["content"]
+     try:
+         return json.loads(raw)
+diff --git a/drive_organizer/rollback.py b/drive_organizer/rollback.py
+index 8d690b2..fc766cc 100644
+--- a/drive_organizer/rollback.py
++++ b/drive_organizer/rollback.py
+@@ -4,7 +4,7 @@ from pathlib import Path
+ 
+ from googleapiclient.errors import HttpError
+ from rich.console import Console
+-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
++from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+ from rich.table import Table
+ 
+ from drive_organizer.config import settings
+diff --git a/drive_organizer/strategies/base.py b/drive_organizer/strategies/base.py
+index 83e040c..d37c68c 100644
+--- a/drive_organizer/strategies/base.py
++++ b/drive_organizer/strategies/base.py
+@@ -2,7 +2,7 @@ from __future__ import annotations
+ 
+ from abc import ABC, abstractmethod
+ 
+-from drive_organizer.ai.base import ClassificationRequest, ClassificationResult
++from drive_organizer.ai.base import ClassificationResult
+ from drive_organizer.drive.models import DriveFile
+ 
+ 
+diff --git a/drive_organizer/strategies/by_project.py b/drive_organizer/strategies/by_project.py
+index 8c78b24..74d3fe7 100644
+--- a/drive_organizer/strategies/by_project.py
++++ b/drive_organizer/strategies/by_project.py
+@@ -1,6 +1,5 @@
+ from __future__ import annotations
+ 
+-from drive_organizer.drive.models import DriveFile
+ from drive_organizer.strategies.base import OrganizationStrategy
+ 
+ _DEFAULT_FOLDERS = [
+diff --git a/drive_organizer/strategies/by_type.py b/drive_organizer/strategies/by_type.py
+index c142dd1..f1ab2e2 100644
+--- a/drive_organizer/strategies/by_type.py
++++ b/drive_organizer/strategies/by_type.py
+@@ -97,7 +97,7 @@ class FileTypeStrategy(OrganizationStrategy):
+         return f"Classify by file type into one of: {', '.join(_FOLDERS)}"
+ 
+     def allowed_folders(self) -> list[str]:
+-        return _FOLDERS + ["Altro"]
++        return [*_FOLDERS, "Altro"]
+ 
+     def requires_ai(self) -> bool:
+         return False
+diff --git a/drive_organizer/strategies/factory.py b/drive_organizer/strategies/factory.py
+index 9a4cee6..4afb031 100644
+--- a/drive_organizer/strategies/factory.py
++++ b/drive_organizer/strategies/factory.py
+@@ -1,6 +1,6 @@
+ from __future__ import annotations
+ 
+-from typing import Callable
++from collections.abc import Callable
+ 
+ from drive_organizer.strategies.base import OrganizationStrategy
+ 
+diff --git a/drive_organizer/ui/duplicate_diff.py b/drive_organizer/ui/duplicate_diff.py
+index aea0b9d..22ce3ff 100644
+--- a/drive_organizer/ui/duplicate_diff.py
++++ b/drive_organizer/ui/duplicate_diff.py
+@@ -2,11 +2,10 @@ from __future__ import annotations
+ 
+ import click
+ from rich.console import Console
+-from rich.panel import Panel
+ from rich.table import Table
+ from rich.text import Text
+ 
+-from drive_organizer.duplicate_finder import DuplicateGroup, DuplicatePlan
++from drive_organizer.duplicate_finder import DuplicatePlan
+ 
+ 
+ def _size_str(size: int | None) -> str:
+@@ -65,7 +64,7 @@ def print_duplicate_preview(console: Console, plan: DuplicatePlan) -> None:
+ 
+     console.print()
+     active = plan.files_to_archive
+-    console.print(f"[bold]Riepilogo:[/bold]")
++    console.print("[bold]Riepilogo:[/bold]")
+     console.print(f"  Gruppi totali:          [cyan]{plan.total_groups}[/cyan]")
+     console.print(f"  File da archiviare:     [yellow]{len(active)}[/yellow]  (spostati in 99_Archivio/Duplicati)")
+     console.print(f"  Eccezioni (tenuti tutti): [dim]{plan.excepted_count}[/dim]")
+diff --git a/drive_organizer/ui/rename_diff.py b/drive_organizer/ui/rename_diff.py
+index b3bf1f7..37713c7 100644
+--- a/drive_organizer/ui/rename_diff.py
++++ b/drive_organizer/ui/rename_diff.py
+@@ -1,7 +1,5 @@
+ from __future__ import annotations
+ 
+-from collections import defaultdict
+-
+ from rich.console import Console
+ from rich.table import Table
+ 
+@@ -32,7 +30,7 @@ def print_rename_preview(console: Console, plan: RenamePlan) -> None:
+     console.print()
+     console.print(table)
+     console.print()
+-    console.print(f"[bold]Riepilogo:[/bold]")
++    console.print("[bold]Riepilogo:[/bold]")
+     console.print(f"  File da rinominare: [green]{len(active)}[/green]")
+     if skipped:
+         console.print(f"  File saltati:       [yellow]{len(skipped)}[/yellow] (nome già ottimale, confidenza bassa o non rinominabili)")
+diff --git a/drive_organizer/ui/tree_diff.py b/drive_organizer/ui/tree_diff.py
+index c090833..8ff2d80 100644
+--- a/drive_organizer/ui/tree_diff.py
++++ b/drive_organizer/ui/tree_diff.py
+@@ -17,15 +17,15 @@ def build_before_summary(files: list[DriveFile], folder_map: dict[str, str]) ->
+         parent_id = f.parents[0] if f.parents else "root"
+         by_parent[parent_id].append(f)
+ 
+-    shown = 0
+-    for parent_id, file_list in sorted(by_parent.items(), key=lambda x: -len(x[1])):
++    for shown, (parent_id, file_list) in enumerate(
++        sorted(by_parent.items(), key=lambda x: -len(x[1])), start=1
++    ):
+         folder_name = folder_map.get(parent_id, f"[dim]{parent_id[:8]}…[/dim]")
+         branch = tree.add(f"[cyan]{folder_name}[/cyan] ({len(file_list)} file)")
+         for f in file_list[:3]:
+             branch.add(f"[dim]{f.name}[/dim]")
+         if len(file_list) > 3:
+             branch.add(f"[dim]… e altri {len(file_list) - 3}[/dim]")
+-        shown += 1
+         if shown >= 10:
+             remaining = len(by_parent) - shown
+             if remaining > 0:
+@@ -84,7 +84,7 @@ def print_diff(console: Console, plan: OrganizationPlan, files: list[DriveFile],
+     for op in active:
+         by_provider[op.provider] += 1
+ 
+-    console.print(f"[bold]Riepilogo piano:[/bold]")
++    console.print("[bold]Riepilogo piano:[/bold]")
+     console.print(f"  File da spostare: [green]{len(active)}[/green]")
+     console.print(f"  Cartelle da creare: [green]{len(plan.folders_to_create)}[/green]")
+     if skipped:
+diff --git a/drive_organizer/wizard.py b/drive_organizer/wizard.py
+index 2dae778..a172861 100644
+--- a/drive_organizer/wizard.py
++++ b/drive_organizer/wizard.py
+@@ -7,7 +7,7 @@ from pathlib import Path
+ 
+ from rich.console import Console
+ from rich.panel import Panel
+-from rich.prompt import Prompt, Confirm
++from rich.prompt import Confirm, Prompt
+ from rich.rule import Rule
+ 
+ console = Console(legacy_windows=False)
+@@ -185,7 +185,7 @@ def run_setup() -> bool:
+     app_dir = _get_app_dir()
+     creds_dest = app_dir / "credentials.json"
+ 
+-    console.print(f"Il file scaricato da Google va rinominato [bold]credentials.json[/bold]")
++    console.print("Il file scaricato da Google va rinominato [bold]credentials.json[/bold]")
+     console.print(f"e copiato in: [cyan]{app_dir}[/cyan]")
+     console.print()
+ 
+@@ -227,7 +227,7 @@ def run_setup() -> bool:
+         return False
+ 
+     try:
+-        from drive_organizer.auth.google_auth import get_drive_service, get_authenticated_email
++        from drive_organizer.auth.google_auth import get_authenticated_email, get_drive_service
+         from drive_organizer.drive.client import DriveClient
+         console.print("[dim]Apertura browser…[/dim]")
+         svc = get_drive_service()
+diff --git a/main.py b/main.py
+index d9b34f9..5296651 100644
+--- a/main.py
++++ b/main.py
+@@ -78,7 +78,7 @@ def setup():
+ def auth(account):
+     """Autenticazione Google Drive (apre il browser)."""
+     _check_credentials()
+-    from drive_organizer.auth.google_auth import get_drive_service, get_authenticated_email
++    from drive_organizer.auth.google_auth import get_authenticated_email, get_drive_service
+     console.print("Apertura browser per autenticazione Google…")
+     try:
+         svc = get_drive_service(account)
+@@ -111,10 +111,10 @@ def accounts():
+ def status(account):
+     """Mostra statistiche Drive e stato componenti AI."""
+     _check_credentials()
+-    from drive_organizer.auth.google_auth import get_drive_service, get_authenticated_email
+-    from drive_organizer.drive.client import DriveClient
+     from drive_organizer.ai.ollama_provider import OllamaProvider
++    from drive_organizer.auth.google_auth import get_authenticated_email, get_drive_service
+     from drive_organizer.config import settings
++    from drive_organizer.drive.client import DriveClient
+ 
+     console.print("[bold]Connessione a Google Drive…[/bold]")
+     try:
+@@ -158,9 +158,10 @@ def status(account):
+     from rich.progress import Progress, SpinnerColumn, TextColumn
+     with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=console) as prog:
+         prog.add_task("Lettura metadati…")
+-        files, folder_map = client.scan_all_files()
++        files, _folder_map = client.scan_all_files()
+ 
+     from collections import Counter
++
+     from drive_organizer.strategies.by_type import _MIME_MAP
+     type_counts: Counter = Counter()
+     for f in files:
+@@ -228,7 +229,7 @@ def organize(account, strategy, custom_prompt, taxonomy_file, taxonomy_preset, a
+     if ollama_model:
+         settings.ollama_model = ollama_model
+ 
+-    from drive_organizer.auth.google_auth import get_drive_service, get_authenticated_email
++    from drive_organizer.auth.google_auth import get_authenticated_email, get_drive_service
+     from drive_organizer.drive.client import DriveClient
+     from drive_organizer.planner import OrganizationPlanner
+     from drive_organizer.ui.tree_diff import print_diff
+@@ -263,7 +264,7 @@ def organize(account, strategy, custom_prompt, taxonomy_file, taxonomy_preset, a
+         if not ollama_ok:
+             console.print("[yellow]Avviso: Ollama non raggiungibile — i file ambigui verranno escalati a cloud.[/yellow]")
+ 
+-    from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
++    from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
+     with Progress(
+         TextColumn("[progress.description]{task.description}"),
+         BarColumn(),
+@@ -318,12 +319,13 @@ def rename(account, apply, yes, limit, offset, min_confidence, incremental):
+     """Rinomina i file usando Ollama (AI locale — contenuto mai al cloud)."""
+     _check_credentials()
+ 
++    from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
++
++    from drive_organizer.auth.google_auth import get_authenticated_email, get_drive_service
+     from drive_organizer.config import settings
+-    from drive_organizer.auth.google_auth import get_drive_service, get_authenticated_email
+     from drive_organizer.drive.client import DriveClient
+     from drive_organizer.renamer import FileRenamer
+     from drive_organizer.ui.rename_diff import print_rename_preview
+-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
+ 
+     console.print("\n[bold]Connessione Google Drive…[/bold]")
+     svc = get_drive_service(account)
+@@ -398,10 +400,11 @@ def rename(account, apply, yes, limit, offset, min_confidence, incremental):
+ def rename_rollback(account):
+     """Annulla una sessione di rinomina precedente."""
+     _check_credentials()
++    from rich.table import Table as RichTable
++
+     from drive_organizer.auth.google_auth import get_drive_service
+     from drive_organizer.drive.client import DriveClient
+     from drive_organizer.rename_executor import RenameRollbackManager
+-    from rich.table import Table as RichTable
+ 
+     svc = get_drive_service(account)
+     client = DriveClient(svc)
+@@ -444,15 +447,14 @@ def duplicates(account, apply, archive_folder):
+     """Trova e archivia file duplicati (stesso contenuto o stesso nome)."""
+     _check_credentials()
+ 
+-    from drive_organizer.auth.google_auth import get_drive_service, get_authenticated_email
++    from rich.progress import Progress, SpinnerColumn, TextColumn
++
++    from drive_organizer.auth.google_auth import get_authenticated_email, get_drive_service
+     from drive_organizer.drive.client import DriveClient
++    from drive_organizer.drive.models import MoveOperation, OrganizationPlan
+     from drive_organizer.duplicate_finder import find_duplicates
+-    from drive_organizer.ui.duplicate_diff import print_duplicate_preview, ask_exceptions
+     from drive_organizer.executor import PlanExecutor
+-    from drive_organizer.drive.models import (
+-        OrganizationPlan, MoveOperation
+-    )
+-    from rich.progress import Progress, SpinnerColumn, TextColumn
++    from drive_organizer.ui.duplicate_diff import ask_exceptions, print_duplicate_preview
+ 
+     console.print("\n[bold]Connessione Google Drive…[/bold]")
+     svc = get_drive_service(account)
+@@ -587,7 +589,9 @@ def rollback(account, run_id, yes, rollback_all):
+ def _build_strategy(name: str, custom_prompt: str | None, no_haiku: bool, taxonomy_file: str | None = None, year_only: bool = False):
+     if name == "custom":
+         import json
++
+         from pydantic import ValidationError
++
+         from drive_organizer.strategies.custom import CustomNLStrategy, Taxonomy
+         if taxonomy_file:
+             try:
+@@ -628,6 +632,7 @@ def web(port):
+     """Avvia la web UI locale nel browser."""
+     import threading
+     import webbrowser
++
+     from web import app
+     url = f"http://localhost:{port}"
+     console.print(f"[bold]Drive Organizer Web UI[/bold] → [link={url}]{url}[/link]")
+diff --git a/pyproject.toml b/pyproject.toml
+index 9b483f9..f2c64e9 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
+ 
+ [project]
+ name = "drive-organizer"
+-version = "1.0.0"
++version = "1.5.0"
+ description = "Riorganizza Google Drive con AI locale + cloud (cascade: Ollama → Haiku → Opus)"
+ readme = "README.md"
+ license = { text = "MIT" }
+@@ -32,7 +32,7 @@ dependencies = [
+ drive-organizer = "main:cli"
+ 
+ [project.optional-dependencies]
+-dev = ["pyinstaller>=6.0", "pytest>=8.0", "pytest-cov>=5.0"]
++dev = ["pyinstaller>=6.0", "pytest>=8.0", "pytest-cov>=5.0", "ruff>=0.6"]
+ 
+ [tool.setuptools]
+ py-modules = ["main"]
+diff --git a/ruff.toml b/ruff.toml
+new file mode 100644
+index 0000000..0bcc846
+--- /dev/null
++++ b/ruff.toml
+@@ -0,0 +1,21 @@
++# Ruff configuration for Drive Organizer.
++# Operational one-off scripts under scripts/ are excluded: they were written for a
++# single live run and kept for provenance, not maintained as library code.
++target-version = "py311"
++line-length = 120
++extend-exclude = ["scripts", "_fix_estero.py"]
++
++[lint]
++select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "RUF"]
++ignore = [
++    "E501",    # line length is enforced by the formatter, not the linter
++    "SIM105", "SIM108", "B007",
++    "RUF003",  # ambiguous unicode in Italian comments is intentional
++    "UP017",   # datetime.UTC is py3.11-only; timezone.utc is more portable
++    "B905",    # AI providers guarantee result/batch alignment by file_id (see cascade.py)
++]
++
++[lint.per-file-ignores]
++"web_app/__init__.py" = ["E402"]      # blueprints imported after app creation by design
++"drive_organizer/auth/google_auth.py" = ["E402"]
++"tests/**" = ["B905", "B017"]
+diff --git a/tests/conftest.py b/tests/conftest.py
+index 5043bf1..d504a0f 100644
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -1,6 +1,7 @@
+-import pytest
+ from pathlib import Path
+ 
++import pytest
++
+ 
+ @pytest.fixture(autouse=True)
+ def _isolate_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+diff --git a/tests/helpers.py b/tests/helpers.py
+index fb038cb..3c51fcd 100644
+--- a/tests/helpers.py
++++ b/tests/helpers.py
+@@ -1,4 +1,5 @@
+ from datetime import datetime, timezone
++
+ from drive_organizer.drive.models import DriveFile
+ 
+ NOW = datetime(2024, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
+diff --git a/tests/test_cache.py b/tests/test_cache.py
+index 84363f5..9f1e12e 100644
+--- a/tests/test_cache.py
++++ b/tests/test_cache.py
+@@ -1,6 +1,6 @@
+-from tests.helpers import make_file
+-from drive_organizer.ai.cache import SignatureCache
+ from drive_organizer.ai.base import ClassificationResult
++from drive_organizer.ai.cache import SignatureCache
++from tests.helpers import make_file
+ 
+ 
+ def _res(path="PDF") -> ClassificationResult:
+diff --git a/tests/test_cascade.py b/tests/test_cascade.py
+index 7adea69..93175a8 100644
+--- a/tests/test_cascade.py
++++ b/tests/test_cascade.py
+@@ -2,10 +2,10 @@ from unittest.mock import MagicMock, patch
+ 
+ import pytest
+ 
+-from tests.helpers import make_file
+-from drive_organizer.ai.cascade import AICascade, _batches, _retry_classify, _fallback
+ from drive_organizer.ai.base import ClassificationResult
++from drive_organizer.ai.cascade import AICascade, _batches, _fallback, _retry_classify
+ from drive_organizer.strategies.by_type import FileTypeStrategy
++from tests.helpers import make_file
+ 
+ 
+ def _res(file_id, path, conf=0.9, provider="haiku"):
+diff --git a/tests/test_drive_client.py b/tests/test_drive_client.py
+index b00cbee..376d615 100644
+--- a/tests/test_drive_client.py
++++ b/tests/test_drive_client.py
+@@ -2,8 +2,6 @@ from __future__ import annotations
+ 
+ from unittest.mock import MagicMock, patch
+ 
+-import pytest
+-
+ from drive_organizer.drive.client import DriveClient
+ 
+ 
+diff --git a/tests/test_executor.py b/tests/test_executor.py
+index 2377238..d0d731a 100644
+--- a/tests/test_executor.py
++++ b/tests/test_executor.py
+@@ -1,14 +1,11 @@
+ from __future__ import annotations
+ 
+-from datetime import datetime
+-from pathlib import Path
+-from unittest.mock import MagicMock, patch
++from unittest.mock import MagicMock
+ 
+ import pytest
+ 
+ from drive_organizer.drive.models import MoveOperation, OrganizationPlan
+ from drive_organizer.executor import PlanExecutor
+-from tests.helpers import make_file
+ 
+ 
+ def _make_plan(moves: list[MoveOperation], folders: list[str] | None = None) -> OrganizationPlan:
+diff --git a/tests/test_privacy.py b/tests/test_privacy.py
+index c450a7a..fa31d07 100644
+--- a/tests/test_privacy.py
++++ b/tests/test_privacy.py
+@@ -1,8 +1,8 @@
+ import pytest
+ 
+-from tests.helpers import make_file
+-from drive_organizer.ai.privacy import build_request, build_requests
+ from drive_organizer.ai.base import ClassificationRequest
++from drive_organizer.ai.privacy import build_request, build_requests
++from tests.helpers import make_file
+ 
+ 
+ def test_build_request_maps_metadata():
+diff --git a/tests/test_strategies.py b/tests/test_strategies.py
+index c5a7664..8749559 100644
+--- a/tests/test_strategies.py
++++ b/tests/test_strategies.py
+@@ -1,10 +1,8 @@
+ from datetime import datetime, timezone
+ 
+-import pytest
+-
+-from tests.helpers import make_file
+-from drive_organizer.strategies.by_type import FileTypeStrategy
+ from drive_organizer.strategies.by_date import DateStrategy
++from drive_organizer.strategies.by_type import FileTypeStrategy
++from tests.helpers import make_file
+ 
+ 
+ class TestFileTypeStrategy:
+diff --git a/tests/test_web.py b/tests/test_web.py
+index 9f1e7d5..cc98411 100644
+--- a/tests/test_web.py
++++ b/tests/test_web.py
+@@ -1,7 +1,5 @@
+ from __future__ import annotations
+ 
+-import json
+-from pathlib import Path
+ from unittest.mock import patch
+ 
+ import pytest
+diff --git a/web.py b/web.py
+index 35f370d..f619957 100644
+--- a/web.py
++++ b/web.py
+@@ -3,13 +3,18 @@
+ Keep this file so existing callers (`from web import app`, `python web.py`)
+ continue to work unchanged.
+ """
+-from web_app import app  # noqa: F401  re-export
++from web_app import app
+ 
+ if __name__ == "__main__":
++    import os
+     import threading
+     import webbrowser
+ 
+-    port = 5001
++    port = int(os.environ.get("WEB_PORT", "5001"))
++    # Default to loopback only: the UI controls the user's Google Drive, so it must
++    # not be reachable from the local network. Set WEB_HOST=0.0.0.0 to opt in to
++    # LAN exposure (only sensible together with WEB_AUTH_TOKEN).
++    host = os.environ.get("WEB_HOST", "127.0.0.1")
+     print(f"\nDrive Organizer Web UI -> http://localhost:{port}\n")
+     threading.Timer(1.2, lambda: webbrowser.open(f"http://localhost:{port}")).start()
+-    app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
++    app.run(host=host, port=port, debug=False, threaded=True)
+diff --git a/web_app/__init__.py b/web_app/__init__.py
+index 08cc063..d32fa56 100644
+--- a/web_app/__init__.py
++++ b/web_app/__init__.py
+@@ -25,19 +25,23 @@ _OPEN_PREFIXES = ("/static/",)
+ 
+ @app.before_request
+ def _check_auth():
++    import hmac
++
+     from drive_organizer.config import settings
+     if not settings.web_auth_token:
+         return
+     if request.path in _OPEN_PATHS or any(request.path.startswith(p) for p in _OPEN_PREFIXES):
+         return
+-    token = request.headers.get("X-Auth-Token") or request.args.get("token")
+-    if token != settings.web_auth_token:
++    token = request.headers.get("X-Auth-Token") or request.args.get("token") or ""
++    # Constant-time comparison avoids leaking the token via response timing.
++    if not hmac.compare_digest(token, settings.web_auth_token):
+         return jsonify({"error": "Unauthorized — set X-Auth-Token header or ?token= query param"}), 401
+ 
+ 
+ # ── Background TTL cleanup ────────────────────────────────────────────────────
+ def _ops_cleanup():
+     import time
++
+     from web_app.state import _ops, _ops_ts
+     while True:
+         time.sleep(300)
+@@ -51,13 +55,13 @@ def _ops_cleanup():
+ threading.Thread(target=_ops_cleanup, daemon=True, name="ops-cleanup").start()
+ 
+ # ── Register blueprints ───────────────────────────────────────────────────────
+-from web_app.routes.status import bp as status_bp
+-from web_app.routes.organize import bp as organize_bp
+-from web_app.routes.taxonomy import bp as taxonomy_bp
+-from web_app.routes.duplicates import bp as duplicates_bp
+-from web_app.routes.rollback import bp as rollback_bp
+ from web_app.routes.config import bp as config_bp
++from web_app.routes.duplicates import bp as duplicates_bp
++from web_app.routes.organize import bp as organize_bp
+ from web_app.routes.rename import bp as rename_bp
++from web_app.routes.rollback import bp as rollback_bp
++from web_app.routes.status import bp as status_bp
++from web_app.routes.taxonomy import bp as taxonomy_bp
+ 
+ app.register_blueprint(status_bp)
+ app.register_blueprint(organize_bp)
+diff --git a/web_app/routes/config.py b/web_app/routes/config.py
+index 535a200..291ae62 100644
+--- a/web_app/routes/config.py
++++ b/web_app/routes/config.py
+@@ -17,7 +17,7 @@ def api_config_get():
+     from drive_organizer.config import settings
+ 
+     def mask(v):
+-        return (v[:8] + "…") if len(v) > 8 else ("(vuota)" if not v else v)
++        return (v[:8] + "…") if len(v) > 8 else (v if v else "(vuota)")
+ 
+     if settings.anthropic_api_key:
+         active = "Anthropic"
+diff --git a/web_app/routes/duplicates.py b/web_app/routes/duplicates.py
+index a9f6b15..b62c859 100644
+--- a/web_app/routes/duplicates.py
++++ b/web_app/routes/duplicates.py
+@@ -4,7 +4,7 @@ import threading
+ 
+ from flask import Blueprint, jsonify, request
+ 
+-from web_app.helpers import _FakeProgress, new_op
++from web_app.helpers import new_op
+ 
+ bp = Blueprint("duplicates", __name__)
+ 
+diff --git a/web_app/routes/organize.py b/web_app/routes/organize.py
+index 83a6669..1d179a5 100644
+--- a/web_app/routes/organize.py
++++ b/web_app/routes/organize.py
+@@ -9,7 +9,7 @@ from pathlib import Path
+ from flask import Blueprint, Response, jsonify, request
+ 
+ from web_app.helpers import _FakeProgress, build_cascade, new_op
+-from web_app.state import _plans, _structure_cache, _structure_loading, _structure_lock
++from web_app.state import _plans, _structure_lock
+ 
+ bp = Blueprint("organize", __name__)
+ 
+@@ -46,7 +46,9 @@ def api_organize():
+ 
+             if strategy == "custom":
+                 import re as _re
++
+                 from pydantic import ValidationError as _VE
++
+                 from drive_organizer.config import settings
+                 from drive_organizer.strategies.custom import CustomNLStrategy, Taxonomy
+ 
+@@ -276,7 +278,7 @@ def api_structure_proposed():
+ 
+             q.put({"type": "info", "message": "Connessione Drive..."})
+             svc = get_drive_service(account)
+-            email = get_authenticated_email(svc)
++            get_authenticated_email(svc)  # validate auth early (preview route, email unused)
+             client = DriveClient(svc)
+ 
+             q.put({"type": "info", "message": "Scansione file..."})
+diff --git a/web_app/routes/status.py b/web_app/routes/status.py
+index f6c443f..05fedb1 100644
+--- a/web_app/routes/status.py
++++ b/web_app/routes/status.py
+@@ -20,7 +20,9 @@ def api_status():
+     try:
+         from drive_organizer.ai.ollama_provider import OllamaProvider
+         from drive_organizer.auth.google_auth import (
+-            get_authenticated_email, get_drive_service, list_accounts,
++            get_authenticated_email,
++            get_drive_service,
++            list_accounts,
+         )
+         from drive_organizer.config import settings
+         from drive_organizer.drive.client import DriveClient
