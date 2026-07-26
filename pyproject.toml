@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "drive-organizer"
-version = "1.5.0"
+version = "1.5.1"
 description = "Riorganizza Google Drive con AI locale + cloud (cascade: Ollama → Haiku → Opus)"
 readme = "README.md"
 license = { text = "MIT" }
