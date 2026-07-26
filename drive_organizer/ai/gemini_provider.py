@@ -102,11 +102,11 @@ class GeminiFlashProvider:
                     temperature=0,
                 ),
             )
-            return _parse_results(resp.text, requests_list, "haiku")
+            return _parse_results(resp.text, requests_list, "gemini-flash")
         except Exception as e:
             return [ClassificationResult(
                 file_id=r.file_id, target_path="Altro", confidence=0.0,
-                reasoning=f"Gemini Flash error: {e}", provider="haiku",
+                reasoning=f"Gemini Flash error: {e}", provider="gemini-flash",
             ) for r in requests_list]
 
 
@@ -139,11 +139,11 @@ class GeminiProProvider:
                     temperature=0,
                 ),
             )
-            return _parse_results(resp.text, requests_list, "opus")
+            return _parse_results(resp.text, requests_list, "gemini-pro")
         except Exception as e:
             return [ClassificationResult(
                 file_id=r.file_id, target_path="Altro", confidence=0.0,
-                reasoning=f"Gemini Pro error: {e}", provider="opus",
+                reasoning=f"Gemini Pro error: {e}", provider="gemini-pro",
             ) for r in requests_list]
 
     def parse_custom_taxonomy(self, description: str) -> dict:

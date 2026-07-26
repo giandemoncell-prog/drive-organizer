@@ -47,6 +47,7 @@ class AICascade:
         progress: Progress | None = None,
         task_id=None,
     ) -> list[ClassificationResult]:
+        self._cloud_escalations = 0
         hint = strategy.build_prompt_hint()
         allowed = strategy.allowed_folders() or None
         # Custom strategy uses keyword matching per file name — caching by (ext, size, mime)

@@ -97,4 +97,7 @@ def api_config_save():
     except Exception:
         pass
 
+    from web_app.helpers import reset_cascade
+    reset_cascade()
+
     return jsonify({"ok": True})

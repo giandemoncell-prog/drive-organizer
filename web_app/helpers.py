@@ -32,8 +32,35 @@ def new_op() -> tuple[str, queue.Queue]:
 
 
 def build_cascade():
-    from drive_organizer.ai.factory import build_cascade as _bc
-    return _bc()
+    import web_app.state as _state
+    from web_app.state import _cascade_lock
+    with _cascade_lock:
+        if _state._cascade is None:
+            from drive_organizer.ai.factory import build_cascade as _bc
+            try:
+                _state._cascade = _bc()
+            except ValueError:
+                # No cloud key — build Ollama-only cascade with no-op cloud stubs
+                from drive_organizer.ai.cascade import AICascade
+                from drive_organizer.ai.ollama_provider import OllamaProvider
+
+                class _NoOp:
+                    def classify_batch(self, *a, **kw):
+                        raise RuntimeError("No cloud provider")
+                    def health_check(self):
+                        return False
+                    def parse_custom_taxonomy(self, *a):
+                        raise RuntimeError("No cloud provider")
+
+                _state._cascade = AICascade(ollama=OllamaProvider(), haiku=_NoOp(), opus=_NoOp())
+        return _state._cascade
+
+
+def reset_cascade():
+    """Invalidate the cached cascade — call after config changes."""
+    import web_app.state as _state
+    with _state._cascade_lock:
+        _state._cascade = None
 
 
 def sanitize_key(v: str) -> str:

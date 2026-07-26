@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from unittest.mock import MagicMock
 
 import pytest
@@ -108,6 +109,13 @@ class TestExecutePartialFailure:
 
 class TestLock:
     def test_concurrent_run_raises(self, executor, tmp_path):
-        (tmp_path / ".lock").write_text("99999")
+        # Use the current process PID — guaranteed to be alive
+        (tmp_path / ".lock").write_text(str(os.getpid()))
         with pytest.raises(RuntimeError, match="Another run is active"):
             executor.execute(_make_plan([]))
+
+    def test_stale_lock_is_cleared_automatically(self, executor, tmp_path, client):
+        # A lock file with a non-existent PID should be treated as stale and cleared
+        (tmp_path / ".lock").write_text("99999999")
+        executor.execute(_make_plan([]))  # must NOT raise
+        assert not (tmp_path / ".lock").exists()  # lock released after run

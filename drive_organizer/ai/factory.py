@@ -24,8 +24,10 @@ def build_cascade():
         from drive_organizer.ai.qwen_provider import QwenFlashProvider, QwenProProvider
         haiku, opus = QwenFlashProvider(), QwenProProvider()
     else:
-        from drive_organizer.ai.haiku_provider import HaikuProvider
-        from drive_organizer.ai.opus_provider import OpusProvider
-        haiku, opus = HaikuProvider(), OpusProvider()
+        raise ValueError(
+            "Nessuna API key cloud configurata. "
+            "Imposta almeno una chiave in .env: ANTHROPIC_API_KEY, GEMINI_API_KEY, "
+            "DEEPSEEK_API_KEY o DASHSCOPE_API_KEY."
+        )
 
     return AICascade(ollama=OllamaProvider(), haiku=haiku, opus=opus)

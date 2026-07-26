@@ -27,10 +27,23 @@ class PlanExecutor:
 
     def _acquire_lock(self) -> None:
         if self._lock_path.exists():
-            raise RuntimeError(
-                f"Another run is active (lock: {self._lock_path}). "
-                "If this is stale, delete it manually."
-            )
+            alive = True
+            try:
+                pid = int(self._lock_path.read_text(encoding="utf-8").strip())
+                os.kill(pid, 0)  # signal 0: check if process is alive
+                # No exception → process exists → lock is live
+            except PermissionError:
+                pass  # process exists but can't signal it (Windows) → still live
+            except OSError:
+                alive = False  # ProcessLookupError, WinError 87/11, etc. → process gone
+            except ValueError:
+                alive = False  # unreadable PID → treat as stale
+
+            if alive:
+                raise RuntimeError(
+                    f"Another run is active (lock: {self._lock_path}). "
+                    "If this is stale, delete it manually."
+                )
         self._lock_path.write_text(str(os.getpid()), encoding="utf-8")
 
     def _release_lock(self) -> None:

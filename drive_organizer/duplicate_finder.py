@@ -10,8 +10,11 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
 from drive_organizer.drive.models import DriveFile
+
+_NOW_DAYS = datetime.now(timezone.utc).timestamp() / 86400
 
 _COPY_PATTERNS = [
     re.compile(r"\s*\(\d+\)\s*$"),           # "file (1)", "file (2)"
@@ -41,9 +44,10 @@ def _score_file(f: DriveFile) -> int:
     score = 0
     # Nomi più lunghi e descrittivi sono preferiti
     score += min(len(f.name), 60)
-    # File più vecchi sono probabilmente gli originali
+    # File più vecchi sono probabilmente gli originali (giorni fa, non dall'epoch)
     if f.created_time:
-        score -= int(f.created_time.timestamp() / 86400)  # giorni dall'epoch (meno = prima)
+        days_ago = _NOW_DAYS - f.created_time.timestamp() / 86400
+        score += min(int(days_ago), 3650)  # cap a 10 anni per evitare dominanza
     # File in cartelle specifiche (non root) sono già organizzati
     if len(f.parents) > 0:
         score += 10

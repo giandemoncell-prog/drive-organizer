@@ -14,3 +14,7 @@ _structure_cache: dict | None = None
 
 # Pending organize plans (for export): op_id → OrganizationPlan
 _plans: dict = {}
+
+# AI cascade singleton — rebuilt only when config changes
+_cascade_lock = threading.Lock()
+_cascade = None

@@ -58,7 +58,23 @@ def _build_cascade():
             "[yellow]Avviso: nessuna API key cloud configurata.[/yellow]\n"
             "Solo Ollama locale verrà usato. Configura una chiave in [bold].env[/bold] per la cascade completa."
         )
-    return build_cascade()
+        from drive_organizer.ai.cascade import AICascade
+        from drive_organizer.ai.ollama_provider import OllamaProvider
+
+        class _NoOpProvider:
+            def classify_batch(self, *a, **kw):
+                raise RuntimeError("No cloud provider")
+            def health_check(self):
+                return False
+            def parse_custom_taxonomy(self, *a):
+                raise RuntimeError("No cloud provider — configure an API key for custom taxonomy")
+
+        return AICascade(ollama=OllamaProvider(), haiku=_NoOpProvider(), opus=_NoOpProvider())
+    try:
+        return build_cascade()
+    except ValueError as e:
+        console.print(f"[red]Errore cascade:[/red] {e}")
+        sys.exit(1)
 
 
 @click.group()
@@ -143,14 +159,28 @@ def status(account):
     ollama_ok = ollama.health_check()
     table.add_row("Ollama", f"[green]{settings.ollama_model}[/green]" if ollama_ok else "[red]Non raggiungibile[/red]")
 
-    api_ok = bool(settings.anthropic_api_key)
-    gemini_ok = bool(settings.gemini_api_key)
-    table.add_row("Haiku 4.5 / Gemini Flash",
-        "[green]Anthropic[/green]" if api_ok else
-        ("[green]Gemini[/green]" if gemini_ok else "[yellow]Nessuna API key[/yellow]"))
-    table.add_row("Opus 4.8 / Gemini Pro",
-        "[green]Anthropic[/green]" if api_ok else
-        ("[green]Gemini[/green]" if gemini_ok else "[yellow]Nessuna API key[/yellow]"))
+    if settings.anthropic_api_key:
+        provider_label = "[green]Anthropic[/green]"
+        flash_label = f"Haiku ({settings.haiku_model})"
+        pro_label = f"Opus ({settings.opus_model})"
+    elif settings.gemini_api_key:
+        provider_label = "[green]Gemini[/green]"
+        flash_label = f"Gemini Flash ({settings.gemini_flash_model})"
+        pro_label = f"Gemini Pro ({settings.gemini_pro_model})"
+    elif settings.deepseek_api_key:
+        provider_label = "[green]DeepSeek[/green]"
+        flash_label = f"DeepSeek Flash ({settings.deepseek_flash_model})"
+        pro_label = f"DeepSeek Pro ({settings.deepseek_pro_model})"
+    elif settings.dashscope_api_key:
+        provider_label = "[green]Qwen (DashScope)[/green]"
+        flash_label = f"Qwen Flash ({settings.qwen_flash_model})"
+        pro_label = f"Qwen Pro ({settings.qwen_pro_model})"
+    else:
+        provider_label = "[yellow]Nessuna API key[/yellow]"
+        flash_label = "Provider Flash"
+        pro_label = "Provider Pro"
+    table.add_row(flash_label, provider_label)
+    table.add_row(pro_label, provider_label)
 
     console.print(table)
 
@@ -443,13 +473,15 @@ def rename_rollback(account):
 @click.option("--apply", is_flag=True, default=False, help="Sposta i duplicati in archivio (default: solo preview)")
 @click.option("--archive-folder", default="99_Archivio/Duplicati", show_default=True,
               help="Cartella destinazione duplicati")
-def duplicates(account, apply, archive_folder):
+@click.option("--incremental", is_flag=True, default=False, help="Scan incrementale (più veloce su Drive già scansionati)")
+def duplicates(account, apply, archive_folder, incremental):
     """Trova e archivia file duplicati (stesso contenuto o stesso nome)."""
     _check_credentials()
 
     from rich.progress import Progress, SpinnerColumn, TextColumn
 
     from drive_organizer.auth.google_auth import get_authenticated_email, get_drive_service
+    from drive_organizer.config import settings
     from drive_organizer.drive.client import DriveClient
     from drive_organizer.drive.models import MoveOperation, OrganizationPlan
     from drive_organizer.duplicate_finder import find_duplicates
@@ -464,13 +496,17 @@ def duplicates(account, apply, archive_folder):
 
     console.print("[bold]Scansione file…[/bold]")
     with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=console) as prog:
-        prog.add_task("Lettura Drive…")
-        files, folder_map = client.scan_all_files()
+        t = prog.add_task("Lettura Drive…")
+        if incremental:
+            safe_email = email.replace("@", "_at_").replace(".", "_")
+            state_path = Path(settings.rollback_dir) / f"scan_state_{safe_email}.json"
+            files, folder_map = client.scan_incremental(state_path, prog, t)
+        else:
+            files, folder_map = client.scan_all_files(prog, t)
 
-    from drive_organizer.config import settings as _settings
     exclude_ids = {
         fid for fid, name in folder_map.items()
-        if any(p in name for p in _settings.duplicate_exclude_folder_patterns)
+        if any(p in name for p in settings.duplicate_exclude_folder_patterns)
     }
     excluded_count = sum(1 for f in files if any(p in f.parents for p in exclude_ids))
     if exclude_ids:
@@ -633,11 +669,11 @@ def web(port):
     import threading
     import webbrowser
 
-    from web import app
+    from web_app import app
     url = f"http://localhost:{port}"
     console.print(f"[bold]Drive Organizer Web UI[/bold] → [link={url}]{url}[/link]")
     threading.Timer(1.2, lambda: webbrowser.open(url)).start()
-    app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
+    app.run(host="127.0.0.1", port=port, debug=False, threaded=True)
 
 
 if __name__ == "__main__":
